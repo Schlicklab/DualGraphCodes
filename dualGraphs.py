@@ -472,9 +472,13 @@ def main():
 		RNA.printAdj()
 		name=arg.split("/")[-1].split(".")[0]
         #write adj matrix to file
-		file1=open("/Users/cs4367/Desktop/Dual_Partitioning/rRNA_ribovision/adj_matrices/%s_matrix.txt"%name,"w")
+	#file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/%s_matrix.txt"%name,"w")
+        file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/%s_matrix.txt"%name,"w")
+        #file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/%s_matrix.txt"%name,"w")
         #write matrix dimension to file (needed for the c++ code)
-        file2=open("/Users/cs4367/Desktop/Dual_Partitioning/rRNA_ribovision/adj_matrices/n.txt","w")
+        #file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/n.txt","w")
+        file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/n.txt","w")
+        #file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/n.txt","w")
         file2.write("%d"%len(RNA.adjMatrix))
         file2.close()
 
@@ -492,7 +496,9 @@ def main():
         else:
             label(RNA)
         #Write graph ID to file
-        file3=open("/Users/cs4367/Desktop/Dual_Partitioning/rRNA_ribovision/adj_matrices/Graph_ID.txt","a+")
+        #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/Graph_ID.txt","a+")
+        file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/Graph_ID.txt","a+")
+        #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/Graph_ID.txt","a+")
         if len(graphID)<1:
             file3.write("%s\t%s\n"%(name,len(RNA.Helices)))
         else:

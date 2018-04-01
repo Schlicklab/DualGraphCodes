@@ -29,14 +29,24 @@ def loadEigenvalues(num_vertices):
 
 
 
-myfiles=[x.strip() for x in open("C:/Users/cigdems/Desktop/NYU_WORK/Dual_Partitioning/rnastrand_results/all_structures.txt","r").readlines()]
-outfile=open("C:/Users/cigdems/Desktop/NYU_WORK/Dual_Partitioning/rnastrand_results/all_subgraph_IDs.txt","w")                
+#myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/list_bp","r").readlines()]
+#outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/all_subgraph_IDs.txt","w")
+myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/all_structures.txt","r").readlines()]
+outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/all_subgraph_IDs.txt","w")
+#myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/all_structures.txt","r").readlines()]
+#outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/all_subgraph_IDs.txt","w")
+
+
 for file1 in myfiles:
     #print file1
-    matrix_files=os.listdir("C:/Users/cigdems/Desktop/NYU_WORK/Dual_Partitioning/rnastrand_results/submatrices/%s/"%file1)
+    #matrix_files=os.listdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s/"%file1)
+    matrix_files=os.listdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s/"%file1)
+    #matrix_files=os.listdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s/"%file1)
     count=0 #keep track for number of subgraphs
     for mymatrix in matrix_files:
-        adjMatrix=loadtxt("C:/Users/cigdems/Desktop/NYU_WORK/Dual_Partitioning/rnastrand_results/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
+	#adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
+        adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
+        #adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
 	count+=1
 	#We need to calculate the laplacian matrix from adj matrix. L=D-A
         laplacian = []

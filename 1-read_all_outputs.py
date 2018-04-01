@@ -14,17 +14,29 @@ import os
 
 #read dual_graph_partitioning output
 
-myfiles=[x.strip() for x in open("C:/Users/cigdems/Desktop/NYU_WORK/Dual_Partitioning/rnastrand_results/all_structures.txt","r").readlines()]
+#myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/list_bp","r").readlines()]
+myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/all_structures.txt","r").readlines()]
+#myfiles=[x.strip() for x in open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/all_structures.txt","r").readlines()]
 
 for filename in myfiles:
     print filename
-    if not os.path.isdir("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/submatrices/%s"%filename):
-        os.mkdir("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/submatrices/%s"%filename)
+    #if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s"%filename):
+    #    os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s"%filename)
+    if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s"%filename):
+        os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s"%filename)
+    #if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s"%filename):
+        #os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s"%filename)
     
-    if not os.path.isdir("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/edges/%s"%filename):
-        os.mkdir("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/edges/%s"%filename)
+    #if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/edges/%s"%filename):
+    #    os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/edges/%s"%filename)
+    if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/edges/%s"%filename):
+        os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/edges/%s"%filename)
+    #if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/edges/%s"%filename):
+        #os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/edges/%s"%filename)
 
-    inputfile=open("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/output/%s_output.txt"%filename,"r")
+    #inputfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/output/%s_output.txt"%filename,"r")
+    inputfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/output/%s_output.txt"%filename,"r")
+    #inputfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/%s_output.txt"%filename,"r")
     mylines=inputfile.readlines()
     inputfile.close()
 
@@ -51,13 +63,17 @@ for filename in myfiles:
                 matrix[m][n]+=1 #increase the number of connections in the adjacency matrix. matrix[3][0] will be increased 1
                 matrix[n][m]+=1 #since the matrix is symmetric, increase matrix[0][3] 1.
             #print matrix
-            outfile=open("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/submatrices/%s/matrix%d.txt"%(filename,count),"w")
+            #outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s/matrix%d.txt"%(filename,count),"w")
+            outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s/matrix%d.txt"%(filename,count),"w")
+            #outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s/matrix%d.txt"%(filename,count),"w")
             for ii in range(len(matrix)):
                 for jj in range(len(matrix[0])):
                     outfile.write("%d\t"%matrix[ii][jj])
                 outfile.write("\n")
             outfile.close()
-            outfile=open("/Users/cs4367/Desktop/Dual_Partitioning/rnastrand_results/edges/%s/edges%d.txt"%(filename,count),"w")
+            #outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/edges/%s/edges%d.txt"%(filename,count),"w")
+            outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/edges/%s/edges%d.txt"%(filename,count),"w")
+            #outfile=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/edges/%s/edges%d.txt"%(filename,count),"w")
             outfile.write(mylines[i+2]) #Write the edges
             outfile.close()
         
