@@ -250,6 +250,9 @@ def changeHelices(RNA):
 			helix1fiveStart = RNA.Helices[i].start
 			helix1threeStart = RNA.Bases[RNA.Helices[i].end].indexBP
 			helix1threeEnd = RNA.Bases[RNA.Helices[i].start].indexBP
+			# if statement added by S.J. 01/30/2018 to not combine helices that don't have base pairs in the correct order
+                        if helix2threeEnd > helix1threeStart: # 3' of helix 1 starts before 3' of helix 2 ends, therefore cannot be combined
+                                continue
 			Total5P = abs(helix2fiveStart - helix1fiveEnd)-1
 			Total3P = abs(helix1threeStart - helix2threeEnd)-1
 			if ((abs(Total5P + Total3P) < 2) or (abs(Total5P) == 1 and abs(Total3P) == 1)):
@@ -273,6 +276,7 @@ def changeHelices(RNA):
 		for m in range(0,len(changes)):
 			if changes[m] > i:
 				changes[m] -= 1
+
 
 	singleHelices = []
 	for i in range(1,len(RNA.Helices)):
