@@ -393,7 +393,8 @@ def calcEigen(RNA,arg):
 		RNA.printLpl()
 		eigen = sort(LA.eigvals(RNA.laplacian))
 		decimalArray = []
-		decimalPlace = Decimal("0.0001")
+		#decimalPlace = Decimal("0.0001")
+	    	decimalPlace = Decimal("0.00000001")
 		for i in eigen:
 			decimalArray.append(Decimal(str(i)).quantize(decimalPlace))
 		loc = -1
