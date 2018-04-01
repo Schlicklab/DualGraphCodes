@@ -55,10 +55,20 @@ class Helix:
 	def __init__(self):
 		self.connected = []
 
+# S.J. 02/11/2018 - to keep track of edges
+class Edge:
+	Helix1 = None
+	Helix2 = None
+	start = None
+	end = None
+	def __init__(self):
+		pass
+
 class RNAInfo:
 	Bases = None
 	Loops = None
 	Helices = None
+	Edges = None # S.J. 02/11/2018 to keep track of edges
 	numVert = None
 	adjMatrix = []
 	degMatrix = []
@@ -67,6 +77,7 @@ class RNAInfo:
 		self.Bases = [0]
 		self.Loops = [0]
 		self.Helices = [0]
+		self.Edges = [0] # S.J. 02/11/2018 to keep track of edges
 		self.numVert = 0
 	def makeMatrices(self):
 		for i in range(1,len(self.Helices)):
@@ -109,8 +120,14 @@ class RNAInfo:
         	for i in range(1,len(self.Helices)):
                 #print "Vertex %d: start_pos=%d, end_pos=%d, flag=%s" %(i,self.Helices[i].start,self.Helices[i].end,self.Helices[i].flag)
                 #print "Vertex %d: start_pos: (%d, %d), end_pos: (%d, %d)" %(i,self.Helices[i].start,self.Bases[self.Helices[i].start].indexBP,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP)
-                	print "Vertex %d: first strand: (%d, %d), second strand: (%d, %d)" %(i,self.Helices[i].start,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP,self.Bases[self.Helices[i].start].indexBP)
+                	#print "Vertex %d: first strand: (%d, %d), second strand: (%d, %d)" %(i,self.Helices[i].start,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP,self.Bases[self.Helices[i].start].indexBP)
+                	print "Vertex %d: first strand: %d %d second strand: %d %d" %(i,self.Helices[i].start,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP,self.Bases[self.Helices[i].start].indexBP)
     
+	# S.J. 02/11/2018 - to print edges information
+	def printEdges(self):
+		for i in range(1,len(self.Edges)):
+			print "Edge: helix 1: %d helix 2: %d strand: %d %d" %(self.Edges[i].Helix1,self.Edges[i].Helix2,self.Edges[i].start,self.Edges[i].end)
+
 	def printOrder(self,vOrder):
 		order = []
 		prevHelix = 0
@@ -232,6 +249,7 @@ def countHelices(RNA):
 			RNA.Helices[i].Loop = loop
 
 
+
 ### changeHelices ####
 #####################
 #Combines helices if they are only separated by one unpaired NT
@@ -251,8 +269,8 @@ def changeHelices(RNA):
 			helix1threeStart = RNA.Bases[RNA.Helices[i].end].indexBP
 			helix1threeEnd = RNA.Bases[RNA.Helices[i].start].indexBP
 			# if statement added by S.J. 01/30/2018 to not combine helices that don't have base pairs in the correct order
-                        if helix2threeEnd > helix1threeStart: # 3' of helix 1 starts before 3' of helix 2 ends, therefore cannot be combined
-                                continue
+			if helix2threeEnd > helix1threeStart: # 3' of helix 1 starts before 3' of helix 2 ends, therefore cannot be combined
+				continue
 			Total5P = abs(helix2fiveStart - helix1fiveEnd)-1
 			Total3P = abs(helix1threeStart - helix2threeEnd)-1
 			if ((abs(Total5P + Total3P) < 2) or (abs(Total5P) == 1 and abs(Total3P) == 1)):
@@ -277,7 +295,7 @@ def changeHelices(RNA):
 			if changes[m] > i:
 				changes[m] -= 1
 
-
+	
 	singleHelices = []
 	for i in range(1,len(RNA.Helices)):
 		if RNA.Helices[i].start == RNA.Helices[i].end:
@@ -303,6 +321,7 @@ def changeHelices(RNA):
 		for m in range(0,len(singleHelices)):
 			if singleHelices[m] > i:
 				singleHelices[m] -= 1
+	
 	#redo loops if you removed single helices
 	if len(singleHelices) > 0:
 		for i in range(1,len(RNA.Helices)):
@@ -322,9 +341,16 @@ def changeHelices(RNA):
 #method to count the number of connections 
 def connectHelices(RNA):	
 #first connect loops to themselves
+	nEdges=0; # S.J. 02/11/2018 - count edges
 	for i in range(1,len(RNA.Helices)):
 		if RNA.Helices[i].flag == 'L':
 			RNA.Helices[i].edges += 2
+			RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+			nEdges += 1
+			RNA.Edges[nEdges].Helix1 = i
+			RNA.Edges[nEdges].Helix2 = i
+			RNA.Edges[nEdges].start = RNA.Helices[i].end
+			RNA.Edges[nEdges].end = RNA.Bases[RNA.Helices[i].end].indexBP
 			RNA.adjMatrix[i-1][i-1] = 2
 	for i in range(1,len(RNA.Helices)-1):
 		for j in range(i+1,len(RNA.Helices)):
@@ -343,33 +369,81 @@ def connectHelices(RNA):
 			helix2 = [helix2fiveStart, helix2fiveEnd, helix2threeEnd, helix2threeStart]
 			helix1 = [helix1fiveStart, helix1fiveEnd, helix1threeEnd, helix1threeStart]
                       
-
+			
 
 			if (clearPath(RNA,helix1fiveEnd,helix2fiveStart) or (helix2fiveStart - helix1fiveEnd)==1):
 				increment(RNA,i,j)
+				RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+				nEdges += 1
+				RNA.Edges[nEdges].Helix1 = i
+				RNA.Edges[nEdges].Helix2 = j
+				RNA.Edges[nEdges].start = helix1fiveEnd
+				RNA.Edges[nEdges].end = helix2fiveStart
 
 			if (clearPath(RNA,helix2threeEnd,helix1threeStart) or (helix1threeStart - helix2threeEnd)==1):
 				increment(RNA,i,j)
+				RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+				nEdges += 1
+				RNA.Edges[nEdges].Helix1 = i
+				RNA.Edges[nEdges].Helix2 = j
+				RNA.Edges[nEdges].start = helix2threeEnd
+				RNA.Edges[nEdges].end = helix1threeStart
 
 			if (clearPath(RNA,helix1fiveEnd,helix2threeStart) or (helix2threeStart - helix1fiveEnd)==1):
 				increment(RNA,i,j)
+				RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+				nEdges += 1
+				RNA.Edges[nEdges].Helix1 = i
+				RNA.Edges[nEdges].Helix2 = j
+				RNA.Edges[nEdges].start = helix1fiveEnd
+				RNA.Edges[nEdges].end = helix2threeStart
 
 			if (clearPath(RNA,helix2threeEnd,helix1fiveStart) or (helix1fiveStart - helix2threeEnd)==1):
 				increment(RNA,i,j)
+				RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+				nEdges += 1
+				RNA.Edges[nEdges].Helix1 = i
+				RNA.Edges[nEdges].Helix2 = j
+				RNA.Edges[nEdges].start = helix2threeEnd
+				RNA.Edges[nEdges].end = helix1fiveStart
 
 			if (clearPath(RNA,helix1threeEnd,helix2fiveStart) or (helix2fiveStart -helix1threeEnd==1)):
 				increment(RNA,i,j)
+				RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+				nEdges += 1
+				RNA.Edges[nEdges].Helix1 = i
+				RNA.Edges[nEdges].Helix2 = j
+				RNA.Edges[nEdges].start = helix1threeEnd
+				RNA.Edges[nEdges].end = helix2fiveStart
 
 			if pseudoKnots(RNA):
 				if (clearPath(RNA,helix2fiveEnd,helix1threeStart)):
 					increment(RNA,i,j)
+					RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+					nEdges += 1
+					RNA.Edges[nEdges].Helix1 = i
+					RNA.Edges[nEdges].Helix2 = j
+					RNA.Edges[nEdges].start = helix2fiveEnd
+					RNA.Edges[nEdges].end = helix1threeStart
 
 				if (clearPath(RNA,helix1threeEnd,helix2threeStart)):
 					increment(RNA,i,j)
+					RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+					nEdges += 1
+					RNA.Edges[nEdges].Helix1 = i
+					RNA.Edges[nEdges].Helix2 = j
+					RNA.Edges[nEdges].start = helix1threeEnd
+					RNA.Edges[nEdges].end = helix2threeStart
 
                 #Added by CSB:
 				if (clearPath(RNA,helix1threeStart,helix2fiveStart)):
    					increment(RNA,i,j)
+					RNA.Edges.append(Edge()) # S.J. 02/11/2018 - store edge information
+					nEdges += 1
+					RNA.Edges[nEdges].Helix1 = i
+					RNA.Edges[nEdges].Helix2 = j
+					RNA.Edges[nEdges].start = helix1threeStart
+					RNA.Edges[nEdges].end = helix2fiveStart
 
 
     
@@ -398,7 +472,7 @@ def calcEigen(RNA,arg):
 		eigen = sort(LA.eigvals(RNA.laplacian))
 		decimalArray = []
 		#decimalPlace = Decimal("0.0001")
-	    	decimalPlace = Decimal("0.00000001")
+		decimalPlace = Decimal("0.00000001")
 		for i in eigen:
 			decimalArray.append(Decimal(str(i)).quantize(decimalPlace))
 		loc = -1
@@ -408,10 +482,10 @@ def calcEigen(RNA,arg):
 				tArray.append(Decimal(str(values[i][j])).quantize(decimalPlace))
 			if decimalArray == tArray:
 				loc = i
-				#print decimalArray #added by S.J. 11/09/2017 for testing
-                                #print tArray
-                                #print loc
-                                #print keys[loc]
+                		#print decimalArray #added by S.J. 11/09/2017 for testing
+                		#print tArray
+                		#print loc
+                		#print keys[loc]
 		#address negative 0 output
 		for i in range(0,len(decimalArray)):
 			if str(decimalArray[i])[0] == "-":	
@@ -421,11 +495,17 @@ def calcEigen(RNA,arg):
 			print "Eigenvalue %d: " %(evNum) + str(i)
 			evNum+= 1
 		#print loc  #added by S.J. 11/09/2017 for testing
-                #print len(keys)
-                #the following if statement added by S.J. 11/09/2017 to make sure that is we don't find the eigen values then we accidently don't assign a graph ID, because python does not give errors for negative indices
-                if loc == -1: # if matching graph is not found
-                        print "TMV,%d" %(len(RNA.Helices)-1)
-                        return 0
+		#print len(keys)
+		#print keys[-2]
+		#print keys[0]
+		#print keys[1]
+		#print keys[2]
+		#print keys[38594]
+		#print keys[38595]
+		#the following if statement added by S.J. 11/09/2017 to make sure that is we don't find the eigen values then we accidently don't assign a graph ID, because python does not give errors for negative indices
+		if loc == -1: # if matching graph is not found
+			print "TMV,%d" %(len(RNA.Helices)-1)
+			return 0
 		print "%s" %(keys[loc])
 		#print "<a href=http://www.biomath.nyu.edu/rag/dual_topology.php?topo=%s>Graph ID: %s</a>" %(keys[loc], keys[loc])
 		graphID.append(keys[loc])
@@ -488,7 +568,8 @@ def main():
 		RNA.printAdj()
 		name=arg.split("/")[-1].split(".")[0]
         #write adj matrix to file
-	#file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/%s_matrix.txt"%name,"w")
+        #file1=open("/Users/sj78/Documents/GrantsChapters/FiguresForRNAGraphsChapter/Figs_material/1s72_dualmat.txt","w")
+        #file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/%s_matrix.txt"%name,"w")
         file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/%s_matrix.txt"%name,"w")
         #file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/%s_matrix.txt"%name,"w")
         #write matrix dimension to file (needed for the c++ code)
@@ -505,12 +586,13 @@ def main():
         file1.close()
         RNA.printDeg()
         RNA.printHelices()
+	RNA.printEdges() # S.J. 02/11/2018
         success=calcEigen(RNA,arg) # catching the return value S.J. 11/09/2017
         correctHNumbers(RNA)
         if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
             print "No matching graph exists because vertex number is either 1 or greater than 10."
-        elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
-            print "No matching graph exists (even if the vertex number is between 2 and 9)."
+	elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
+	    print "No matching graph exists (even if the vertex number is between 2 and 9)."
         else:
             label(RNA)
         #Write graph ID to file
@@ -519,7 +601,7 @@ def main():
         #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/Graph_ID.txt","a+")
         if len(graphID)<1:
             #file3.write("%s\t%s\n"%(name,len(RNA.Helices)))
-	    file3.write("%s\t%s\n"%(name,len(RNA.Helices)-1)) # S.J. 11/09/2017 - need to print RNA.Helices-1 for total number of helices because the index for helices starts from 1, therefore the length of RNA.Helices will be one more than the number of helices
+            file3.write("%s\t%s\n"%(name,len(RNA.Helices)-1)) # S.J. 11/09/2017 - need to print RNA.Helices-1 for total number of helices because the index for helices starts from 1, therefore the length of RNA.Helices will be one more than the number of helices
         else:
             file3.write("%s\t%s\n"%(name,graphID[0]))
         file3.close()
