@@ -43,7 +43,12 @@ for file1 in myfiles:
     matrix_files=os.listdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s/"%file1)
     #matrix_files=os.listdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s/"%file1)
     count=0 #keep track for number of subgraphs
-    for mymatrix in matrix_files:
+    total_count=len(matrix_files) # S.J. 10/26/2017 - to get the correct order of matrix reading
+    #print total_count
+    #for mymatrix in matrix_files:
+    for x in range(1,total_count+1): # S.J. 10/26/2017 - to get the correct order of matrix reading
+	mymatrix="matrix%d.txt"%(x)
+        #print mymatrix
 	#adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
         adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
         #adjMatrix=loadtxt("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/submatrices/%s/%s"%(file1, mymatrix),dtype='i')
