@@ -1,3 +1,9 @@
+//Petingi 08/06/14
+//to detect pseudo-graph in dual graphs
+//collaboraton project with Tamar Schlick and Namhee Kim (NYU)
+//we are reading AdJ Matrix thus we convert to Linked List DS
+// Correction SWati found a mistake in the code (the last parallel edges were counted twice). 11/11/17
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -6,7 +12,10 @@
 #include <stack>
 #include<string.h>
 #include<stdlib.h>
+
 using namespace std;
+
+
 //node
 struct edge
 { int v1;
@@ -33,12 +42,14 @@ stack<edge> mystack1;
 bool * Visited;
 int *d_cmpnt; 
 node * glovalnode;
-int  weight[1000][1000]; //weight[100][100] weight[200][200]
+int  weight[1000][1000];
 ifstream infile;
 ofstream outfile;
+
  bool cycles=false;// determine if a graph has cycles.
  
  
+
 class Graph {
 private:
 	int n;
@@ -47,6 +58,7 @@ private:
 	int B;
 	int b_num1;
 	int b_low1;
+
 	int * b_num;
 	int * b_low;
 	int D;
@@ -92,11 +104,13 @@ public:
         Lt = new int [n];
         //headnodes_A= new node [n];
 		// cout << "ok until here 2" << endl;
+
 		// headnodes is an array of nodes.
         for (int i=0; i < n; i++)
          {  
 			 headnodes[i].vertex=i;
              headnodes[i].next=0;
+
 			 b_num1 = 1;
 		     b_low1 = 0;
 		     b_low [i] = 0;
@@ -104,6 +118,7 @@ public:
 			 d_cmpnt [i] = 0;
          }
 		// cout << "ok until here 3" << endl;
+
 	}
 	  void init () 
 	// construtor
@@ -115,6 +130,7 @@ public:
 		b_num1 = 0;
 		numreg_blocks = 0;
         numpseudo_blocks = 0;
+
 		//b_low = new int [n];
 		//b_num = new int [n];
 		
@@ -133,6 +149,7 @@ public:
         //Lt = new int [n];
         //headnodes_A= new node [n];
 		//cout << "ok until here 2: " << n << endl;
+
 		// headnodes is an array of nodes.
         for (int i=0; i < n; i++)
          {  
@@ -148,6 +165,8 @@ public:
 			  mystack.pop();
 			while ( !mystack1.empty()) 
 			  mystack1.pop(); 
+
+
 	}
 	 ~Graph ()
 	 {  delete [ ] headnodes;
@@ -199,8 +218,10 @@ void setdiam (int diameter)
 			
 			temp1->binary = 0; //delete edge
 			temp1->rel = 0.5;
+
 			//cout << endl << "vertex: " << temp1->vertex;
 			float first_call = factoring (1);
+
 			temp1->binary = 1;
 			temp1->rel = 0.5;
 			
@@ -242,6 +263,7 @@ void setdiam (int diameter)
 			             { y = edge_irrel_1[j].v1;
 			               r = edge_irrel_1[j].v2;
                            temp1 = &headnodes[y];//delete edge
+
 		                    while(temp1->vertex!= r)
 			                {	
 				              temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -270,6 +292,7 @@ void setdiam (int diameter)
 		}
 		//cout << endl << "============== edge " << x.v1 << "-" << x.v2;
 	    temp1 = &headnodes[x1.v1];//delete edge
+
 		while(temp1->vertex!= x1.v2)
 			{	
 				temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -277,7 +300,9 @@ void setdiam (int diameter)
 		
 			temp1->binary = 1;
 			temp1->rel = 1;
+
         temp2 = &headnodes[x1.v2];//delete edge
+
 		while(temp2->vertex!= x1.v1)
 			{	
 				temp2 = temp2->next; // tranfer the address of 'temp->next' to 'temp'
@@ -303,6 +328,7 @@ void setdiam (int diameter)
 		      temp1->rel = 0.5;
               temp2->binary = 1; //delete edge
 			  temp2->rel = 0.5;
+
 			  if (flag && irr) // put back irrelevant edges
 			  { //cout << endl << "============== edge " << x1.v1 << "-" << x1.v2;
 				  
@@ -310,12 +336,15 @@ void setdiam (int diameter)
 			        { y = edge_irrel_1[j].v1;
 			          r = edge_irrel_1[j].v2;
                       temp1 = &headnodes[y];//delete edge
+
 		              while(temp1->vertex!= r)
 			           {	
 				         temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
 			           }  
+
 					  temp1->binary = 1;
 					  temp1->rel = 0.5;
+
 				  }
 				  //delete [ ] edge_irrel_2;
 			  }
@@ -323,6 +352,7 @@ void setdiam (int diameter)
 		}
         
 	} 
+
 float factoring_irrel_C (int flag)
 	{   
 		int value, y, r, irr, u1;
@@ -347,6 +377,7 @@ float factoring_irrel_C (int flag)
 			                  { y = edge_irrel_1[j].v1;
 			                    r = edge_irrel_1[j].v2;
                                 temp1 = &headnodes[y];//delete edge
+
 		                        while(temp1->vertex!= r)
 			                  {	
 				                temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -360,9 +391,11 @@ float factoring_irrel_C (int flag)
 					
 				}
 		}
+
 		//cout << endl << "============== edge " << x.v1 << "-" << x.v2;
 	    temp1 = &headnodes[x1.v1];//delete edge
 		temp2 = &headnodes[x1.v2];
+
 		while(temp1->vertex!= x1.v2)
 			{	
 				temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -399,6 +432,7 @@ float factoring_irrel_C (int flag)
 			        { y = edge_irrel_1[j].v1;
 			          r = edge_irrel_1[j].v2;
                       temp1 = &headnodes[y];//delete edge
+
 		              while(temp1->vertex!= r)
 			           {	
 				         temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -410,6 +444,7 @@ float factoring_irrel_C (int flag)
                       /*cout << endl << "======= inderting irrel ======";*/
 			  }
 			  delete [ ] edge_irrel_2;
+
 			  }
 			return (0.5 * first_call + 0.5 * second_call);
 		}
@@ -426,13 +461,15 @@ float factoring_irrel_C (int flag)
 		 {  
 			infile >> A;
 			//cout << "entry: " << A;
+
 			if (i==j) A=A/2;
 			weight [i][j] = A;
+			//cout << endl << "aqui";
 			if (A > 0 ) // exclude self-loops
-			{ for (int k = 1; k <= A;  k++)
+			{ for (int k = 1; k <= 1;  k++)
 			   { newnode= new node;
                  newnode->vertex = j;
-			     
+				 //cout << endl << "here I am";
                  if( headnodes[i].next == NULL )
 			    {
 			  	    newnode->next= NULL;
@@ -449,10 +486,13 @@ float factoring_irrel_C (int flag)
 				newnode->next = NULL;
 				pre->next = newnode;
 				 }
+
+
 		//ADJACENT NODES
 		/*
 			newnode= new node;
 			newnode->vertex = i;
+
 			if( headnodes[j].next == NULL )
 			{
 				newnode->next= NULL;
@@ -474,12 +514,14 @@ float factoring_irrel_C (int flag)
 			} // for external
 	
     
+
 	}
 	void DFS(int father, int v)
 	// DFS function
 	{  
 	Visited [v]=true;
 	bool adjtoa=true;
+
     node* adjnode=headnodes[v].next;
     while (adjnode) // visit all vertices adjacent to v
 	{
@@ -491,9 +533,12 @@ float factoring_irrel_C (int flag)
 		{ 
 			cycles=true;
         }
+
 		adjnode = adjnode->next;
+
 	}
 	}
+
 	void Bi_Connect(int father, int v)
 	// DFS function
 	{  
@@ -504,6 +549,7 @@ float factoring_irrel_C (int flag)
 	  b_num [v] = b_num1; //tree edge 
 	  b_low [v] = b_num [v]; b_num1 ++;
 	
+
     node* adjnode=headnodes[v].next;
     while (adjnode) // visit all vertices adjacent to v
 	{   if ((adjnode -> vertex !=father) && (b_num [adjnode -> vertex] < b_num [v])) // push edge to the stack
@@ -511,26 +557,31 @@ float factoring_irrel_C (int flag)
      	{  
 		   b_e.v1 = v;
 	       b_e.v2 = adjnode->vertex;
+		   //cout << endl << "edge: (" << b_e.v1 << "," << b_e.v2 << ")";
 		         mystack.push (b_e);
 		         mystack1.push (b_e); // auxiliary stack
 		   
 		   //cout << endl << "stack size: " << mystack.size(); //pushing it but not popping it.
+
 	    }
 	    if (!b_num[adjnode->vertex]) {
 			Bi_Connect(v,adjnode->vertex);
 		    if (b_low [v] > b_low [adjnode->vertex])
 			    b_low [v] = b_low [adjnode->vertex];
+
 			//cout << endl << "b-low of w= " << adjnode->vertex << "-" << b_low [adjnode->vertex] << "b_num v=" << v << "-" << b_num [v];
 			      if (b_low [adjnode->vertex] >= b_num [v]) { 
 					  
 					//if (Exm_cmpnt (v, adjnode->vertex)) // PSEUDO-KNOT FOUND
 					 // {
+
 				          outfile << endl << "===================== New Block ================== \n" << endl;
 				          do { 
 						      
 					           // delete an edge from the stack of the stack
 				      	        b_e=mystack.top();
 					            mystack.pop();
+								//cout << endl << b_e.v1 << "'" << b_e.v2 << "  - weight: " << weight[b_e.v1][b_e.v2];
 								for (int l=1; l <= weight [b_e.v1] [b_e.v2]; l++)
 					                  outfile << "(" << b_e.v1 << "," << b_e.v2 <<") - ";
 				                } while ( !((b_e.v1==adjnode->vertex && b_e.v2==v) || (b_e.v2==adjnode->vertex && b_e.v1==v))); 
@@ -549,13 +600,15 @@ float factoring_irrel_C (int flag)
 		}
 				  
 		else if ( adjnode->vertex != father) 
+
 		          {  if (b_num [adjnode->vertex] < b_low [v])
 					 b_low [v]=b_num [adjnode->vertex];
 		          }
 		adjnode = adjnode->next;
 	}
-			
+		
 	}
+
 	
 	bool Exm_cmpnt (int v, int w)
     {    bool pseudoknot = false; 
@@ -565,6 +618,7 @@ float factoring_irrel_C (int flag)
 					 //T[i] = false;
 					 d_cmpnt [i] = 0; 
 				 }
+
 		         do { 
 						      
 					           // delete an edge from the stack
@@ -587,6 +641,7 @@ float factoring_irrel_C (int flag)
 					      
 				return pseudoknot;
 	}
+
 	void setup_counter ()
 	{ counter = 0;
 	}
@@ -599,7 +654,7 @@ float factoring_irrel_C (int flag)
 		   bool all1s = true;
 		   x1.v1= -1;
 		   x1.v2= -1;
-           int INFINITY = 1000;
+           int INF = 1000;
 		   int s =0,Minimum,u;
 		   //int temp[40];			//temporary data structure which is needed to 
 		   //T = new bool[n];
@@ -610,8 +665,8 @@ float factoring_irrel_C (int flag)
 		   for(int i =0;i<n;i++)
 			{
 			T[i] = false;			//T=V; all the vertices are eligible to be visited
-			L[i]=INFINITY;			// at the beginning every vertex is at distance ??, from s
-			temp[i] = INFINITY;		
+			L[i]=INF;			// at the beginning every vertex is at distance , from s
+			temp[i] = INF;		
 			father[i] =-1;
 			}
 		   //WE ASSUME THE SOURCE IS 0 FOR EVERY GRAPH
@@ -622,7 +677,7 @@ float factoring_irrel_C (int flag)
 		   for(int i = 0; i < n; i++)				//LOOP TROUGH ALL THE VERTICES OF THE GRAPH
 		  {  
 			  //cout<<endl<<"STEP "<<i<<":\n________ ";
-			  Minimum = INFINITY;
+			  Minimum = INF;
 		      for(int j = 0; j < n; j++)
 			  {   if (!T[j]){
 				  if( Minimum > temp[j])
@@ -665,6 +720,7 @@ float factoring_irrel_C (int flag)
               if (u == terminal)
 				  break;	  
 		   }
+
 			  if (all1s)
 				  //if (L[n-1] <= D)
 				  if (L[terminal] <= D)
@@ -678,7 +734,9 @@ float factoring_irrel_C (int flag)
 				  else val = 2;  //continue
 			  }
 			  
+
 	}
+
 	
 	void display_val ()
 	{   node *temp1;
@@ -693,6 +751,7 @@ float factoring_irrel_C (int flag)
 			}      
 				temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
 			}   
+
 		}
 	}
 	int Dltirrlvnt(edge edge_irrel_1[], int &count_edges)
@@ -710,6 +769,7 @@ float factoring_irrel_C (int flag)
 				
 				temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
 			}   
+
 		}*/
         
 		//int * Ls = new int [n];
@@ -718,8 +778,10 @@ float factoring_irrel_C (int flag)
 		int count = 0;
 		Dijkstra_A(0, headnodes, Ls);
 		//cout << "first call to Disjktras" << endl;
+
 		Dijkstra_A(terminal, headnodes, Lt); 
 		//cout << "second call to Disjktras" << endl;
+
 			for (int i = 0; i < n; i++)
 	       {
             nextn = &headnodes[i];
@@ -748,6 +810,7 @@ float factoring_irrel_C (int flag)
 		else return (0);
 				
 	}	
+
 int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
 	{ 
 	    node *temp1, *nextn;
@@ -758,6 +821,7 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
 		
 		int count = 0;
 		
+
 			for (int i = 0; i < n; i++)
 	       {
             nextn = &headnodes[i];
@@ -767,10 +831,12 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
 			{  
 			   u1=nextn->vertex;
 			   //Dijkstra_C(, headnodes, Ls);
+
 			   if (nextn->binary==1 && nextn->rel==0.5 && i<u1){// possible irrel
 				   //nextn->binary=0;
 				   // find equivalent edge 
                    temp1 = &headnodes[u1];//delete edge
+
 		           while(temp1->vertex!= i)
 			   {	
 				   temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
@@ -780,6 +846,7 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
 			       temp1->rel = 0.5;
                    nextn->binary=0;
 				   nextn->rel=0.5;
+
 				   Dijkstra_A(0,headnodes, Ls);
                    Dijkstra_A(terminal, headnodes, Lt);
 				   if ((Ls[i]+Lt[u1] >=D) && (Ls[u1] + Lt[i]>=D))
@@ -790,6 +857,7 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
                        edge_irrel_1[count].v2=i;
                        edge_irrel_1[count].v1=u1;
 				       count++;
+
 				   } else// not irrelevant
 				        {  temp1->binary = 1;
 			               temp1->rel = 0.5;
@@ -813,6 +881,7 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
                 //cout<< temp1->next->binary<<"  " << endl;
 				temp1 = temp1->next; // tranfer the address of 'temp->next' to 'temp'
 			}   
+
 		}*/
 		
 		//cout<<"Number of vertices: "<<n<<endl;
@@ -825,29 +894,33 @@ int Dltirrlvnt_C(edge edge_irrel_1[], int &count_edges)
 		void display()
 	{
 		node *temp1;
-		outfile << endl << "==============================================";
-		outfile << endl;
+		cout << endl << "==============================================";
+		cout << endl;
 		
 		for(int i = 0;i<n;i++)
 		{
 			temp1 = &headnodes[i];
 			while( temp1!=NULL )
 			{
-				outfile << temp1->vertex<<" -> ";// show the data in the linked list
+				cout << temp1->vertex<<" -> ";// show the data in the linked list
 				temp1 = temp1->next;   // tranfer the address of 'temp->next' to 'temp'
 			}
-			outfile <<endl;
+			cout <<endl;
 		}
 		
 		//cout<<"Number of vertices: "<<n<<endl;
         //cout<<"Number of edges: "<<e<<endl;
 	
 	}	
+
 	
 //;// end class
+
+
+
 void Dijkstra_A (int a, node headnodes_A[],int L[])
 {
-		   int INFINITY = 1000;
+		   int INF= 1000;
 		   int s =a,Minimum,u;
 		   //int temp[30];			//temporary data structure which is needed to 
 		   //T = new bool[n];
@@ -858,8 +931,8 @@ void Dijkstra_A (int a, node headnodes_A[],int L[])
 		   for(int i =0;i<n;i++)
 			{
 			T[i] = false;			//T=V; all the vertices are eligible to be visited
-			L[i]=INFINITY;			// at the beginning every vertex is at distance ??, from s
-			temp[i] = INFINITY;		
+			L[i]=INF;			// at the beginning every vertex is at distance , from s
+			temp[i] = INF;		
 			father[i] =-1;
 			}
 		   //WE ASSUME THE SOURCE IS 0 FOR EVERY GRAPH
@@ -870,7 +943,7 @@ void Dijkstra_A (int a, node headnodes_A[],int L[])
 		   for(int i = 0; i < n; i++)				//LOOP TROUGH ALL THE VERTICES OF THE GRAPH
 		  {  
 			  //cout<<endl<<"STEP "<<i<<":\n________ ";
-			  Minimum = INFINITY;
+			  Minimum = INF;
 		      for(int j = 0; j < n; j++)
 			  {   if (T[j]==0){
 				  if( Minimum > temp[j])
@@ -909,6 +982,7 @@ void Dijkstra_A (int a, node headnodes_A[],int L[])
 		   }
 }
 };// end class
+
 int main(int argc, char ** argv)
 {
     string input, output;
@@ -917,13 +991,10 @@ int main(int argc, char ** argv)
     {
         input=argv[2];
     }
-    
-    
     if(strcmp(argv[3],"-len")==0)
     {
         nods=atoi(argv[4]);
     }
-    
     if(strcmp(argv[5],"-output")==0)
     {
         output=argv[6];
@@ -934,21 +1005,90 @@ int main(int argc, char ** argv)
     //infile.open("/Users/cs4367/Documents/LouisLab/4OJI_adj.txt");
 	//outfile.open("/Users/cs4367/Documents/LouisLab/4OJI_adj_out.txt");
     
-    if (infile.is_open()){
+    if (infile.is_open())
+    {
+        clock_t start;
+        clock_t end;
+        float facto_time;
+        float facto_irr_time;
+        float facto_irr_e_time;
+        string motif_number;
+        //cout<< endl << "Please enter the number of vertices: ";
+        //cin >>nods;
+    
+	
+        //cout<< endl << "Please enter motif number: ";
+        //cin >> motif_number;
+    
+        edgs=0;
+        dim=0;
+        term = 0;
+        Visited=new bool [nods];
+        int b_counter = 0;
+        int Nmbrcmpnts=0; //we initialize the counter for the number of components
+    
+        if  (outfile.is_open())
+        {
+            //outfile << endl << "--------------------- Motif :" << motif_number << " -----------------------------" << endl;
+        }
+        else{
+            cout<<"Cannot open outputfile!"<<endl;
+            exit(0);
+        }
+        //outfile << " +++++++++++++++ number of vertices: " << nods << "    ====================" << endl;
         
+        Graph G(nods,edgs,dim,term);
+        while ( !infile.eof () && b_counter < 1)
+        {
+            G.init();
+            //cout << endl << "ok";
+            b_counter ++;
+		
+            G.create ();
+            //cout << endl << "ok2";
+            //G.display();
+            //cout << endl << "ok3";
+		
+            G.Bi_Connect(-1, 0);
+            //outfile << endl << "----------- Summary information for Motif :" << motif_number << " --------------------------------" << endl;
+            outfile << "----------- Total number of blocks: " << numreg_blocks + numpseudo_blocks << endl;
+            outfile << "----------- number of PK blocks: " << numpseudo_blocks << endl;
+            outfile << "----------- number of regular blocks : " << numreg_blocks << endl;
+            outfile << "-------------------------------------------------------------------------------------" << endl;
+        }
+	
+        infile.close();
+        outfile.close();
+        //system("pause");
+    }
+    else{
+        cout<<"Cannot open inputfile!"<<endl;
+        exit(0);
+    }
+    return 0;
+}
+
+/*int main()
+
+{  
+
+	infile.open("C:/Users/lpetn_000/desktop/RnaDv/2NOQ_B_matrix.txt");
+    //infile.open("C:/users//desktop/RnaDv/swatimatrix.txt");
+	//outfile.open("C:/users/petingi/desktop/RnaDv/.txt");
+	outfile.open("C:/Users/lpetn_000/desktop/RnaDv/2NOQ_B_out.txt");
+
 	clock_t start;
 	clock_t end;
 	float facto_time;
 	float facto_irr_time;
 	float facto_irr_e_time;
 	string motif_number;
-	//cout<< endl << "Please enter the number of vertices: ";
-	//cin >>nods;
-    
+	cout<< endl << "Please enter the number of vertices: ";
+	cin >>nods;
 	
-	//cout<< endl << "Please enter motif number: ";
-	//cin >> motif_number;
-    
+	cout<< endl << "Please enter motif number: ";
+	cin >> motif_number;
+
 	edgs=0;
 	dim=0;
 	term = 0;
@@ -956,15 +1096,10 @@ int main(int argc, char ** argv)
 	int b_counter = 0;
 	
     int Nmbrcmpnts=0; //we initialize the counter for the number of components
-    
-    if  (outfile.is_open()){
 	
-	//outfile << endl << "--------------------- Motif :" << motif_number << " -----------------------------" << endl;
-    }
-        else{
-            cout<<"Cannot open outputfile!"<<endl;
-            exit(0);
-        }
+	outfile << endl << "--------------------- Motif :" << motif_number << " -----------------------------" << endl;
+
+
     //outfile << " +++++++++++++++ number of vertices: " << nods << "    ====================" << endl;
 	Graph G(nods,edgs,dim,term);
 	while ( !infile.eof () && b_counter < 1)
@@ -973,26 +1108,30 @@ int main(int argc, char ** argv)
 	    b_counter ++;
 		
 	    G.create ();
+		//G.display();
 		 //cout << endl << "ok2";
 		//G.display();
 		//cout << endl << "ok3";
 		
+
+
         G.Bi_Connect(-1, 0);
-		//outfile << endl << "----------- Summary information for Motif :" << motif_number << " --------------------------------" << endl;
+		outfile << endl << "----------- Summary information for Motif :" << motif_number << " --------------------------------" << endl;
 		outfile << "----------- Total number of blocks: " << numreg_blocks + numpseudo_blocks << endl;
 		outfile << "----------- number of PK blocks: " << numpseudo_blocks << endl;
 		outfile << "----------- number of regular blocks : " << numreg_blocks << endl;
 		outfile << "-------------------------------------------------------------------------------------" << endl;
+
 	} 
 	
     infile.close();
 	outfile.close();
-    //system("pause");
-    }
-    else{
-        cout<<"Cannot open inputfile!"<<endl;
-        exit(0);
-    }
+    system("pause");
   return 0;
  
-}
+}*/
+
+
+
+
+
