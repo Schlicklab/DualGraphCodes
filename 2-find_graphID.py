@@ -100,7 +100,11 @@ for file1 in myfiles:
                 #print "Eigenvalue %d: " %(evNum) + str(i)
                 evNum+= 1
             #print "%s" %(keys[loc])
-            graphID=(keys[loc])
-            print file1, count, graphID #print filename (rnastrand ID), subgraph number, and graph ID
-            outfile.write("%s\t%d\t%s\n"%(file1, count, graphID)) #print filename (rnastrand ID), subgraph number, and graph ID
+	    if loc == -1: # added S.J. 11/09/2017 to make sure we don't assign graph IDs my mistake even if we don't have them in the library
+                outfile.write("%s\t%d\t%d\n"%(file1, count, N)) #just write the number of vertices for this as well
+                print file1, count, N
+            else: # we have a graph ID that matches the eigen values in the library
+                graphID=(keys[loc])
+                print file1, count, graphID #print filename (rnastrand ID), subgraph number, and graph ID
+                outfile.write("%s\t%d\t%s\n"%(file1, count, graphID)) #print filename (rnastrand ID), subgraph number, and graph ID
 outfile.close()

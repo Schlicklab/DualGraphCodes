@@ -403,6 +403,10 @@ def calcEigen(RNA,arg):
 				tArray.append(Decimal(str(values[i][j])).quantize(decimalPlace))
 			if decimalArray == tArray:
 				loc = i
+				#print decimalArray #added by S.J. 11/09/2017 for testing
+                                #print tArray
+                                #print loc
+                                #print keys[loc]
 		#address negative 0 output
 		for i in range(0,len(decimalArray)):
 			if str(decimalArray[i])[0] == "-":	
@@ -411,9 +415,16 @@ def calcEigen(RNA,arg):
 		for i in decimalArray:
 			print "Eigenvalue %d: " %(evNum) + str(i)
 			evNum+= 1
+		#print loc  #added by S.J. 11/09/2017 for testing
+                #print len(keys)
+                #the following if statement added by S.J. 11/09/2017 to make sure that is we don't find the eigen values then we accidently don't assign a graph ID, because python does not give errors for negative indices
+                if loc == -1: # if matching graph is not found
+                        print "TMV,%d" %(len(RNA.Helices)-1)
+                        return 0
 		print "%s" %(keys[loc])
 		#print "<a href=http://www.biomath.nyu.edu/rag/dual_topology.php?topo=%s>Graph ID: %s</a>" %(keys[loc], keys[loc])
 		graphID.append(keys[loc])
+		return 1 # added by S.J. 11/09/2017 to return 1 if successful in assigning graph ID
 
 def label(RNA):
 		#Code to LABEL, please address any PROBLEMS!###ALSO FIX GRAPHID
@@ -489,10 +500,12 @@ def main():
         file1.close()
         RNA.printDeg()
         RNA.printHelices()
-        calcEigen(RNA,arg)
+        success=calcEigen(RNA,arg) # catching the return value S.J. 11/09/2017
         correctHNumbers(RNA)
         if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
             print "No matching graph exists because vertex number is either 1 or greater than 10."
+        elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
+            print "No matching graph exists (even if the vertex number is between 2 and 9)."
         else:
             label(RNA)
         #Write graph ID to file
@@ -500,7 +513,8 @@ def main():
         file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/Graph_ID.txt","a+")
         #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/Graph_ID.txt","a+")
         if len(graphID)<1:
-            file3.write("%s\t%s\n"%(name,len(RNA.Helices)))
+            #file3.write("%s\t%s\n"%(name,len(RNA.Helices)))
+	    file3.write("%s\t%s\n"%(name,len(RNA.Helices)-1)) # S.J. 11/09/2017 - need to print RNA.Helices-1 for total number of helices because the index for helices starts from 1, therefore the length of RNA.Helices will be one more than the number of helices
         else:
             file3.write("%s\t%s\n"%(name,graphID[0]))
         file3.close()
