@@ -10,8 +10,10 @@
 #include <fstream>
 #include <ctime>
 #include <stack>
-#include<string.h>
-#include<stdlib.h>
+#include <string.h>
+#include <stdlib.h>
+#include <map>
+#include <set>
 
 using namespace std;
 
@@ -33,9 +35,10 @@ struct node
 
 struct subgraph_node // S.J. 03/29/2018 - to keep track of subgraphs
 {
-    bool * vertices;
+    int num_blocks; // 04/06/2018 - to keep track of number of basic blocks this graph is made up of
+    vector<bool>vertices;
     bool pknot;
-    subgraph_node * next;
+    vector<int>artPointsCount; // 04/03/2018 - to store the articulation points in this subgraph and how many times they occur - will be updated as we join graphs
 };
 
 int nods = 0;
@@ -55,59 +58,164 @@ int weight[1000][1000];
 ifstream infile;
 ofstream outfile;
 bool cycles=false;// determine if a graph has cycles.
-subgraph_node * Subgraphs; // S.J. 03/29/2018
+vector<subgraph_node>Blocks; // S.J. 03/29/2018
+vector<int>artPoints; // 04/03/2018 - to store articulation points and how many times they occur
+map<int,vector<subgraph_node> > artPointsBlocks; // to store basic blocks that correspond to each subgraph
 bool all_subgraphs=false; // S.J. 03/30/2018 - flag to see if we want to calculate all subgraphs or not
 
-//S.J. 03/30/2018 - insert a new block into the list
-void insert_subgraph(subgraph_node * newnode){
+// S.J. 04/03/2018 - function to compare two subgraphs and see if they are same or not
+//returns true when two subgraphs are not the same, so that it is inserted in the set Subgraphs
+//returns false when two subgraphs are the same, so that it is not inserted
+// 04/05/2018 - changed the code to provide a strict ordering of set elements - if same number of blocks, then graphs with more vertices are "greater"; if same number of vertices. then graphs with greater sum of vertex numbers is "greater"
+bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
     
-    if(Subgraphs == NULL){ // this is the first subgraph block
-        Subgraphs=newnode;
+    /*cout << "Subgraph:";
+    for(int i=0; i<nods; i++){
+        
+        if(node1.vertices[i])
+            cout << "\t" << i;
+    }
+    cout << "end" << endl;
+    
+    cout << "Subgraph:";
+    for(int i=0; i<nods; i++){
+        
+        if(node2.vertices[i])
+            cout << "\t" << i;
+    }
+    cout << "end" << endl;
+    
+    for(int i=0;i<nods;i++){
+        
+        // the subgraphs are not the same as one if true and other is false for this vertex
+        if(node1.vertices[i] != node2.vertices[i]){
+            cout << "I return true" << endl;
+            return true;
+        }
     }
     
-    subgraph_node * temp, * temp1;
-    temp=Subgraphs;
+    cout << "I return false" << endl;
+    return false; // the two subgraphs are the same*/
     
-    while(temp != NULL){
+    //04/05/2018 - new code for comparison as a strict ordering is needed.
+    int num1=0,num2=0,sum1=0,sum2=0;
+    
+    for(int i=0;i<nods;i++){
+        
+        if(node1.vertices[i]){
+            num1++;
+            sum1+=i;
+        }
+        if(node2.vertices[i]){
+            num2++;
+            sum2+=i;
+        }
+    }
+    if(num1!=num2)
+        return num1<num2;
+    else
+        return sum1<sum2;
+    
+}
+bool(*fn_pt)(subgraph_node,subgraph_node) = comp_subgraphs;
+set<subgraph_node,bool(*)(subgraph_node,subgraph_node)> Subgraphs (fn_pt);
+
+//S.J. 03/30/2018 - insert a new block into the list
+/*void insert_subgraph(subgraph_node newnode){
+    
+    vector<subgraph_node>::iterator it;
+    
+    for(it=Blocks.begin();it!=Blocks.end();it++){
         
         for(int i=0;i<nods;i++){
-            if(newnode->vertices[i] && temp->vertices[i]){ // there is a common vertex, insert this in between
+            if(newnode.vertices[i] && it->vertices[i]){ // there is a common vertex, insert this in between
                 
-                temp1=temp->next;
-                temp->next=newnode;
-                newnode->next=temp1;
+                Blocks.insert(it+1,newnode);
                 return;
             }
         }
-        temp1=temp;
-        temp=temp->next;
     }
     
-    // if the code comes here, then there are no common vertices with current blocks
-    // add the newnode in the end
-    temp1->next=newnode;
+    // if the code comes here, then there are no common vertices with current blocks/or this is the first block, add the newnode in the end
+    Blocks.push_back(newnode);
     return;
+}*/
+
+//S.J. 04/03/2018 - function to setup the articulation points and corresponding graphs
+void setup_artPoints(){
+    
+    //find articulation points in each subgraph, and update the artPointsCount in each, and all each art point with its corresponding blocks
+    artPoints[0]--; // because 0 is always returned by the function
+    for(int i=0;i<Blocks.size();i++){
+        
+        Blocks[i].artPointsCount.resize(nods); // initialize it with zero
+        for(int j=0;j<nods;j++){
+            
+            if(artPoints[j]!=0 && Blocks[i].vertices[j]) // if any of the articulation points are in this subgraph, update the Subgraph
+                Blocks[i].artPointsCount[j] = artPoints[j];
+        }
+        
+        // has to be done after the above loop as the Ssubgraphs need to be updated fully
+        for(int j=0;j<nods;j++){
+            
+            if(artPoints[j]!=0 && Blocks[i].vertices[j]) // push this graph to its articulation point map
+                artPointsBlocks[j].push_back(Blocks[i]);
+        }
+    }
+    
+    // print the basic blocks allocated to all articulation points
+    /*for(int i=0;i<nods;i++){
+     
+        if(artPoints[i] !=0){ // this is an articulation point
+     
+            cout << "Articulation Point: " << i << endl;
+            for(int j=0;j<artPointsBlocks[i].size();j++){
+     
+                cout << "Subgraph:";
+                for(int k=0; k<nods; k++){
+     
+                    if(artPointsBlocks[i][j].vertices[k])
+                        cout << "\t" << k;
+                }
+                cout << "\tPseudoknot:\t";
+                if(artPointsBlocks[i][j].pknot)
+                    cout << "Yes" << endl;
+                else
+                cout << "No" << endl;
+            }
+        }
+     }*/
+    
+    // insert the basic blocks into the Subgraphs set
+    for(int i=0;i<Blocks.size();i++){
+        
+        Subgraphs.insert(Blocks[i]);
+        //cout << "Inserting block " << i << endl;
+    }
+
 }
 
 // S.J. 03/30/2018 - calculate and print all possible subgraphs and add it to the end of the list
-void calc_possible_subgraphs(){
+//void calc_possible_subgraphs(){
+void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recursive function
     
-    int total_blocks=0;
-    subgraph_node * start, * temp, * temp2, * newnode;
-    subgraph_node * higher_subgraphs;
+    //Earlier code - valid for only linear graphs (graphs joined tother linearly, one after another)
+    /*int total_blocks=0;
+    subgraph_node newnode;
+    vector<subgraph_node> higher_subgraphs;
+    vector<subgraph_node>::iterator start, temp, temp2;
     
-    
-    higher_subgraphs=NULL;
     total_blocks = numreg_blocks + numpseudo_blocks; // total number of blocks
 
     for(int i=2;i<=total_blocks;i++){ // for loop to increase the number of blocks in the new subgraph
         
-        start=Subgraphs;
+        start=Blocks.begin();
         for(int j=0;j<total_blocks-i+1;j++){ // starting point for the calculation of the subgraphs
             
-            newnode = new subgraph_node;
-            newnode->next=NULL;
-            newnode->vertices = new bool[nods];
+            //clearing the previous contents of the newnode
+            newnode.vertices.clear();
+            newnode.vertices.resize(nods);
+            newnode.pknot=false;
             
             temp=start;
             for(int k=1;k<=i;k++){ // for loop to include number of blocks
@@ -115,27 +223,76 @@ void calc_possible_subgraphs(){
                 for(int m=0;m<nods;m++){ // add the vertices of the blocks that are part of the this subgraph
                     
                     if(temp->vertices[m])
-                        newnode->vertices[m]=true;
+                        newnode.vertices[m]=true;
                 }
                 if(temp->pknot) // record if any of the blocks of this subgraph contain pseudoknots
-                    newnode->pknot=true;
-                temp=temp->next;
+                    newnode.pknot=true;
+                
+                temp++;
             }
+            //insert new graph at the begining of the list
+            higher_subgraphs.insert(higher_subgraphs.begin(),newnode);
+            start++;
+        }
+    }
+    if(higher_subgraphs.size() != 0) // if any new subgraphs are created
+        Blocks.insert(Blocks.begin(),higher_subgraphs.begin(),higher_subgraphs.end());  // making one combined list
+    */
+    
+    //04/03/2018 - new code for all possible subgraphs
+    subgraph_node newsubgraph;
+    
+    for(int i=0;i<nods;i++){
+     
+        if(graph.artPointsCount[i] != 0){ // for every articulation point of this subgraph
             
-            newnode->next=higher_subgraphs; // inserting the new subgraph at the begining of the higher subgraphs list
-            if(higher_subgraphs == NULL)
-                temp2=newnode; // keeping track of the first new node created, so that we can add the Subgraphs list to the end of the higher_subgraphs list
-            higher_subgraphs=newnode;
-            
-            start=start->next;
+            //cout << "Articulation Point: " << i << endl;
+            for(int j=0; j<artPointsBlocks[i].size(); j++){ // for every block associated with this articulation point
+                
+                //cout << "Art points block number: " << j << endl;
+                //resetting the subgraph structure
+                newsubgraph.vertices.clear();
+                newsubgraph.vertices.resize(nods);
+                newsubgraph.artPointsCount.clear();
+                newsubgraph.artPointsCount.resize(nods);
+                newsubgraph.pknot=false;
+                
+                for(int k=0;k<nods;k++){ //combine the vertices and artPointsCount of the two graphs
+                    
+                    if(graph.vertices[k] || artPointsBlocks[i][j].vertices[k]) // if either graph has this vertex
+                        newsubgraph.vertices[k]=true;
+                    
+                    if(k!=i) // if this vertex is not the current articulation point
+                        newsubgraph.artPointsCount[k]=graph.artPointsCount[k]+artPointsBlocks[i][j].artPointsCount[k];
+                    else // the count of this articulation point should decrease by one
+                        newsubgraph.artPointsCount[k]=graph.artPointsCount[k]-1;
+                }
+                newsubgraph.num_blocks=graph.num_blocks+1; // 04/06/2018 - as the new graphs are always created by combining the current graph with a block
+                if(graph.pknot || artPointsBlocks[i][j].pknot)
+                    newsubgraph.pknot=true;
+                
+                //cout << "NewSubgraph:";
+                //for(int k=0; k<nods; k++){
+                //    if(newsubgraph.vertices[k])
+                //        cout << "\t" << k;
+                //}
+                //cout << "end" << endl;
+                
+                //if this subgraph does not exist in the set already
+                if(Subgraphs.find(newsubgraph) != Subgraphs.end()){
+                    //cout << "Subgraph already found" << endl;
+                    continue;// nothing to do if it already exists
+                }
+                else{
+                
+                    Subgraphs.insert(newsubgraph); // insert this in the Subgraphs
+                    //cout << "Subgraph inserted: Calling recursion" << endl;
+                    calc_possible_subgraphs(newsubgraph); // recurse on the new subgraph
+                }
+            }
         }
     }
     
-    if(higher_subgraphs != NULL){ // if any new subgraphs are created
-        
-        temp2->next=Subgraphs; // merging the two lists
-        Subgraphs=higher_subgraphs; // making one combined list
-    }
     return;
 }
 
@@ -144,24 +301,36 @@ void print_subgraphs(string outfile_all){
     
     ofstream output;
     output.open(outfile_all);
-    
-    subgraph_node * temp;
-    temp = Subgraphs;
-    while(temp != NULL){
+    //vector<subgraph_node>::iterator temp;
+    set<subgraph_node,bool(*)(subgraph_node,subgraph_node)>:: iterator temp;
+
+    //for(temp=Blocks.begin();temp!=Blocks.end();temp++){
+    for(temp=Subgraphs.begin();temp!=Subgraphs.end();temp++){
         
         output << "Subgraph:";
-        for(int i=0; i<=nods; i++){
+        for(int i=0; i<nods; i++){
             
             if(temp->vertices[i])
                 output << "\t" << i;
         }
         output << "\tPseudoknot:\t";
         if(temp->pknot)
-            output << "Yes" << endl;
+            output << "Yes\t";
         else
-            output << "No" << endl;
-        temp=temp->next;
+            output << "No\t";
+        
+        output << "Num Blocks:\t" << temp->num_blocks << endl;
+        
+        //for (int l=1; l <= weight [b_e.v1] [b_e.v2]; l++)
+        //    outfile << "(" << b_e.v1 << "," << b_e.v2 <<") - ";
+        
+        //outfile << endl << "===================== New Block ================== \n" << endl;
+        
+        //outfile << endl << endl << " ---- this block represents a pseudoknot ---- " << endl ;
+        
+        //outfile << endl << " ---- this block represents a regular-region ---- "<< endl;
     }
+    output.close();
 }
 
 //S.J. 03/30/2018 - to parse the command line arguments
@@ -721,8 +890,8 @@ public:
         b_num [v] = b_num1; //tree edge
         b_low [v] = b_num [v]; b_num1 ++;
 	
-        subgraph_node * new_subgraph; // S.J. 03/30/2018
-
+        subgraph_node new_subgraph; // S.J. 03/30/2018
+        
         node* adjnode=headnodes[v].next;
         while (adjnode) // visit all vertices adjacent to v
         {
@@ -752,11 +921,12 @@ public:
                     outfile << endl << "===================== New Block ================== \n" << endl;
                     
                     // S.J. 03/29/2018 - create a new subgraph node
-                    if(all_subgraphs){ // if all subgraphs have to be calculated, then only store the blocks
+                    if(all_subgraphs){ // if all subgraphs have to be calculated, then only store the blocks and the articulation points
+                        new_subgraph.vertices.clear();
+                        new_subgraph.vertices.resize(nods);
+                        new_subgraph.num_blocks=1; // 04/06/2018
+                        artPoints[v]++; // 04/03/2018 - to store the number of times a articulation point comes, that determines how many subgraphs to merge at this point
                         
-                        new_subgraph = new subgraph_node;
-                        new_subgraph->vertices = new bool[nods];
-                        new_subgraph->next = NULL;
                     }
                     
                     do {
@@ -767,8 +937,8 @@ public:
                         
                         // S.J. 03/29/2018 - adding the vertices that correspond to this subgraph to the node
                         if(all_subgraphs){
-                            new_subgraph->vertices[b_e.v1]=true;
-                            new_subgraph->vertices[b_e.v2]=true;
+                            new_subgraph.vertices[b_e.v1]=true;
+                            new_subgraph.vertices[b_e.v2]=true;
                         }
                         
                         for (int l=1; l <= weight [b_e.v1] [b_e.v2]; l++)
@@ -781,18 +951,20 @@ public:
                         outfile << endl << endl << " ---- this block represents a pseudoknot ---- " << endl ;
                         
                         if(all_subgraphs)
-                            new_subgraph->pknot=true; // S.J. 03/29/2018
+                            new_subgraph.pknot=true;// S.J. 03/29/2018
+
 					}
 					else {
                         numreg_blocks++;
 						outfile << endl << " ---- this block represents a regular-region ---- "<< endl;
                         
                         if(all_subgraphs)
-                            new_subgraph->pknot=false; // S.J. 03/29/2018
+                            new_subgraph.pknot=false; // S.J. 03/29/2018
 					}
 					 // }
-                    if(all_subgraphs)
-                        insert_subgraph(new_subgraph); // S.J. 03/20/2018 - insert the new subgraph into the list
+                    if(all_subgraphs) // S.J. 03/20/2018 - insert the new subgraph into the list
+                        //insert_subgraph(new_subgraph);
+                        Blocks.push_back(new_subgraph); // 04/03/2018 - as for the new algo we don't need it inserted in a specific place
                 }
             }
 			else if ( adjnode->vertex != father){
@@ -1212,7 +1384,6 @@ int main(int argc, char ** argv)
         dim=0;
         term = 0;
         Visited=new bool [nods];
-        Subgraphs = NULL; // S.J. 03/29/2018
         //int b_counter = 0; // S.J. 03/27/2018 - no need for this counter
         int Nmbrcmpnts=0; //we initialize the counter for the number of components
     
@@ -1224,6 +1395,13 @@ int main(int argc, char ** argv)
             exit(0);
         }
         //outfile << " +++++++++++++++ number of vertices: " << nods << "    ====================" << endl;
+        
+        
+        if(all_subgraphs){ // 04/03/2018 - to store articulation points
+            
+            artPoints.resize(nods);
+        }
+        
         
         Graph G(nods,edgs,dim,term);
         //while ( !infile.eof () && b_counter < 1){ // S.J. 03/27/2018 - no need for the while loop, statements executed only once
@@ -1251,17 +1429,12 @@ int main(int argc, char ** argv)
         
         // S.J. 03/30/2018 - calculate all possible subgraphs and add it to the end of the list
         if(all_subgraphs){
-            calc_possible_subgraphs();
+            setup_artPoints(); // 04/03/2018 - to setup articulation points and its blocks
+            //calc_possible_subgraphs();
+            for(int i=0;i<Blocks.size();i++) // 04/03/2018 - calc all possible subgraphs starting from each block
+                calc_possible_subgraphs(Blocks[i]);
+            //cout << "All graph calculations done" << endl;
             print_subgraphs(outfile_all);
-            //delete the subgraph list
-            subgraph_node * temp;
-            while(Subgraphs != NULL){
-            
-                temp=Subgraphs;
-                delete temp->vertices;
-                Subgraphs=Subgraphs->next;
-                delete temp;
-            }
         }
     }
     else{
