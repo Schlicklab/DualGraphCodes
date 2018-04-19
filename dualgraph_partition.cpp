@@ -66,7 +66,7 @@ bool all_subgraphs=false; // S.J. 03/30/2018 - flag to see if we want to calcula
 // S.J. 04/03/2018 - function to compare two subgraphs and see if they are same or not
 //returns true when two subgraphs are not the same, so that it is inserted in the set Subgraphs
 //returns false when two subgraphs are the same, so that it is not inserted
-// 04/05/2018 - changed the code to provide a strict ordering of set elements - if same number of blocks, then graphs with more vertices are "greater"; if same number of vertices. then graphs with greater sum of vertex numbers is "greater"
+// 04/05/2018 - changed the code to provide a strict ordering of set elements - the graphs with more vertices are "greater"; if same number of vertices. then graphs with the vertex with the smallest number "smaller"
 bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
     
     /*cout << "Subgraph:";
@@ -98,24 +98,29 @@ bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
     return false; // the two subgraphs are the same*/
     
     //04/05/2018 - new code for comparison as a strict ordering is needed.
-    int num1=0,num2=0,sum1=0,sum2=0;
+    int num1=0,num2=0,sum1=0,sum2=0,diff=0; // 04/14/2013 - to change the condition for strict lower if same number of vertices
     
     for(int i=0;i<nods;i++){
         
         if(node1.vertices[i]){
             num1++;
-            sum1+=i;
+            //sum1+=i;
         }
         if(node2.vertices[i]){
             num2++;
-            sum2+=i;
+            //sum2+=i;
+        }
+        
+        if(node1.vertices[i] != node2.vertices[i]){
+            diff=i; // the first vertex where the two subgraphs are different
         }
     }
     if(num1!=num2)
         return num1<num2;
-    else
-        return sum1<sum2;
-    
+    else // 04/14/2018 - need to change the condition as sum of vertices can be the same
+        //return sum1<sum2;
+        return node1.vertices[diff]<node2.vertices[diff];
+        
 }
 bool(*fn_pt)(subgraph_node,subgraph_node) = comp_subgraphs;
 set<subgraph_node,bool(*)(subgraph_node,subgraph_node)> Subgraphs (fn_pt);
@@ -241,6 +246,7 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
     
     //04/03/2018 - new code for all possible subgraphs
     subgraph_node newsubgraph;
+    int num_vertices=0; // 04/14/2018 - to count the number of vertices in the subgraph
     
     for(int i=0;i<nods;i++){
      
@@ -256,11 +262,14 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
                 newsubgraph.artPointsCount.clear();
                 newsubgraph.artPointsCount.resize(nods);
                 newsubgraph.pknot=false;
+                num_vertices=0;
                 
                 for(int k=0;k<nods;k++){ //combine the vertices and artPointsCount of the two graphs
                     
-                    if(graph.vertices[k] || artPointsBlocks[i][j].vertices[k]) // if either graph has this vertex
+                    if(graph.vertices[k] || artPointsBlocks[i][j].vertices[k]){ // if either graph has this vertex
                         newsubgraph.vertices[k]=true;
+                        num_vertices++; //04/14/2018
+                    }
                     
                     if(k!=i) // if this vertex is not the current articulation point
                         newsubgraph.artPointsCount[k]=graph.artPointsCount[k]+artPointsBlocks[i][j].artPointsCount[k];
@@ -270,6 +279,9 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
                 newsubgraph.num_blocks=graph.num_blocks+1; // 04/06/2018 - as the new graphs are always created by combining the current graph with a block
                 if(graph.pknot || artPointsBlocks[i][j].pknot)
                     newsubgraph.pknot=true;
+                
+                if(num_vertices > 9) // 04/14/2018 if the number of vertices in greater than 9, then just ignore it
+                    continue;
                 
                 //cout << "NewSubgraph:";
                 //for(int k=0; k<nods; k++){
@@ -287,7 +299,8 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
                 
                     Subgraphs.insert(newsubgraph); // insert this in the Subgraphs
                     //cout << "Subgraph inserted: Calling recursion" << endl;
-                    calc_possible_subgraphs(newsubgraph); // recurse on the new subgraph
+                    if(num_vertices<9) // only call the recursion if the size of the subgraph is < 9
+                        calc_possible_subgraphs(newsubgraph); // recurse on the new subgraph
                 }
             }
         }
@@ -307,7 +320,7 @@ void print_subgraphs(string outfile_all){
     //for(temp=Blocks.begin();temp!=Blocks.end();temp++){
     for(temp=Subgraphs.begin();temp!=Subgraphs.end();temp++){
         
-        output << "Subgraph:";
+        /*output << "Subgraph:";
         for(int i=0; i<nods; i++){
             
             if(temp->vertices[i])
@@ -319,16 +332,28 @@ void print_subgraphs(string outfile_all){
         else
             output << "No\t";
         
-        output << "Num Blocks:\t" << temp->num_blocks << endl;
+        output << "Num Blocks:\t" << temp->num_blocks << endl;*/
         
-        //for (int l=1; l <= weight [b_e.v1] [b_e.v2]; l++)
-        //    outfile << "(" << b_e.v1 << "," << b_e.v2 <<") - ";
-        
-        //outfile << endl << "===================== New Block ================== \n" << endl;
-        
-        //outfile << endl << endl << " ---- this block represents a pseudoknot ---- " << endl ;
-        
-        //outfile << endl << " ---- this block represents a regular-region ---- "<< endl;
+        // 04/14/2018 - printing the subgraphs like blocks
+        output << endl << "===================== New Subgraph ================== \n" << endl;
+        for(int i=0;i<nods;i++){
+            
+            if(temp->vertices[i]){ // if this vertex exists in this graph
+                
+                for(int j=i+1;j<nods;j++){
+                    
+                    if(temp->vertices[j]){ // if this vertex exists in this graph
+                
+                        for(int k=1;k<=weight[i][j];k++) // print the number of edges
+                            output << "(" << i << "," << j << ") - ";
+                    }
+                }
+            }
+        }
+        if(temp->pknot)
+            output << endl << endl << " ---- this subgraph contains a pseudoknot ---- " << endl ;
+        else
+            output << endl << endl << " ---- this subgraph represents a regular-region ---- "<< endl;
     }
     output.close();
 }
