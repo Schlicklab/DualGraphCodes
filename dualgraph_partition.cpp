@@ -66,7 +66,7 @@ bool all_subgraphs=false; // S.J. 03/30/2018 - flag to see if we want to calcula
 // S.J. 04/03/2018 - function to compare two subgraphs and see if they are same or not
 //returns true when two subgraphs are not the same, so that it is inserted in the set Subgraphs
 //returns false when two subgraphs are the same, so that it is not inserted
-// 04/05/2018 - changed the code to provide a strict ordering of set elements - the graphs with more vertices are "greater"; if same number of vertices. then graphs with the vertex with the smallest number "smaller"
+// 04/05/2018 - changed the code to provide a strict ordering of set elements - the graphs with more vertices are "greater"; if same number of vertices. then graphs with the vertex with the smallest number is "smaller"
 bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
     
     /*cout << "Subgraph:";
@@ -98,7 +98,7 @@ bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
     return false; // the two subgraphs are the same*/
     
     //04/05/2018 - new code for comparison as a strict ordering is needed.
-    int num1=0,num2=0,sum1=0,sum2=0,diff=0; // 04/14/2013 - to change the condition for strict lower if same number of vertices
+    int num1=0,num2=0,sum1=0,sum2=0,diff=-1; // 04/14/2013 - to change the condition for strict lower if same number of vertices
     
     for(int i=0;i<nods;i++){
         
@@ -111,16 +111,20 @@ bool comp_subgraphs(subgraph_node node1, subgraph_node node2){
             //sum2+=i;
         }
         
-        if(node1.vertices[i] != node2.vertices[i]){
+        if(node1.vertices[i] != node2.vertices[i] && diff == -1){ // 04/19/2018 - change to make sure we only get the first vertex they are different
             diff=i; // the first vertex where the two subgraphs are different
         }
     }
     if(num1!=num2)
         return num1<num2;
-    else // 04/14/2018 - need to change the condition as sum of vertices can be the same
+    else {
         //return sum1<sum2;
-        return node1.vertices[diff]<node2.vertices[diff];
-        
+        if(diff !=-1) // 04/19/2018 - when two graphs are not the same - the graph with the smaller vertex number is smaller (prence of a vertex is 1 and absence is 0, therefore > sign instead of <)
+            return node1.vertices[diff]>node2.vertices[diff];
+        else // two graphs are the same
+            return node1.vertices[0]<node2.vertices[0];
+    }
+    
 }
 bool(*fn_pt)(subgraph_node,subgraph_node) = comp_subgraphs;
 set<subgraph_node,bool(*)(subgraph_node,subgraph_node)> Subgraphs (fn_pt);
@@ -149,10 +153,13 @@ set<subgraph_node,bool(*)(subgraph_node,subgraph_node)> Subgraphs (fn_pt);
 //S.J. 04/03/2018 - function to setup the articulation points and corresponding graphs
 void setup_artPoints(){
     
+    int num_vertices=0; // 04/19/2018 to count number of vertices in this block
+    
     //find articulation points in each subgraph, and update the artPointsCount in each, and all each art point with its corresponding blocks
     artPoints[0]--; // because 0 is always returned by the function
     for(int i=0;i<Blocks.size();i++){
         
+        num_vertices=0;
         Blocks[i].artPointsCount.resize(nods); // initialize it with zero
         for(int j=0;j<nods;j++){
             
@@ -163,9 +170,16 @@ void setup_artPoints(){
         // has to be done after the above loop as the Ssubgraphs need to be updated fully
         for(int j=0;j<nods;j++){
             
-            if(artPoints[j]!=0 && Blocks[i].vertices[j]) // push this graph to its articulation point map
-                artPointsBlocks[j].push_back(Blocks[i]);
+            if(Blocks[i].vertices[j]){ // if this vertex exists in this subgraph - 04/19/2018
+                
+                num_vertices++;
+                if(artPoints[j]!=0) // if this vertx is an articulation point, push this graph to its articulation point map
+                    artPointsBlocks[j].push_back(Blocks[i]);
+            }
         }
+        
+        if(num_vertices >=2 && num_vertices <=9) // 04/19/2018 - only add subgraphs if they are between 2-9 vertices
+            Subgraphs.insert(Blocks[i]);
     }
     
     // print the basic blocks allocated to all articulation points
@@ -192,11 +206,11 @@ void setup_artPoints(){
      }*/
     
     // insert the basic blocks into the Subgraphs set
-    for(int i=0;i<Blocks.size();i++){
+    //for(int i=0;i<Blocks.size();i++){
         
-        Subgraphs.insert(Blocks[i]);
+        //Subgraphs.insert(Blocks[i]);
         //cout << "Inserting block " << i << endl;
-    }
+    //}
 
 }
 
@@ -316,6 +330,7 @@ void print_subgraphs(string outfile_all){
     output.open(outfile_all);
     //vector<subgraph_node>::iterator temp;
     set<subgraph_node,bool(*)(subgraph_node,subgraph_node)>:: iterator temp;
+    int numreg=0, numpk=0;
 
     //for(temp=Blocks.begin();temp!=Blocks.end();temp++){
     for(temp=Subgraphs.begin();temp!=Subgraphs.end();temp++){
@@ -350,11 +365,23 @@ void print_subgraphs(string outfile_all){
                 }
             }
         }
-        if(temp->pknot)
+        if(temp->pknot){
             output << endl << endl << " ---- this subgraph contains a pseudoknot ---- " << endl ;
-        else
+            numpk++;
+        }
+        else{
             output << endl << endl << " ---- this subgraph represents a regular-region ---- "<< endl;
+            numreg++;
+        }
     }
+    
+    //04/19/2018 - to make it consistent with
+    output << "----------- Total number of subgraphs between 2-9 vertices: " << numreg + numpk << endl;
+    output << "----------- number of PK containing subgraphs: " << numpk << endl;
+    output << "----------- number of regular subgraphs : " << numreg << endl;
+    output << "-------------------------------------------------------------------------------------" << endl;
+
+    
     output.close();
 }
 
@@ -1391,6 +1418,30 @@ int main(int argc, char ** argv)
     
     //infile.open("/Users/cs4367/Documents/LouisLab/4OJI_adj.txt");
 	//outfile.open("/Users/cs4367/Documents/LouisLab/4OJI_adj_out.txt");
+    
+    if(nods == 0 || nods == 1){ // 04/19/2018 - just print the information - this will be all 0s as nothing to be done for these
+        
+        outfile << "----------- Total number of blocks: " << numreg_blocks + numpseudo_blocks << endl;
+        outfile << "----------- number of PK blocks: " << numpseudo_blocks << endl;
+        outfile << "----------- number of regular blocks : " << numreg_blocks << endl;
+        outfile << "-------------------------------------------------------------------------------------" << endl;
+        
+        infile.close();
+        outfile.close();
+        
+        if(all_subgraphs){
+            
+            outfile.open(outfile_all);
+            outfile << "----------- Total number of subgraphs between 2-9 vertices: 0" << endl;
+            outfile << "----------- number of PK containing subgraphs: 0"  << endl;
+            outfile << "----------- number of regular subgraphs : 0" << endl;
+            outfile << "-------------------------------------------------------------------------------------" << endl;
+
+            outfile.close();
+        }
+        
+        return 0;
+    }
     
     if (infile.is_open()){
         
