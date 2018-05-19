@@ -9,6 +9,43 @@ import os
 from numpy import *
 from ClassesFunctions import *
 
+# function to read the eigen values and adjacency matrices for dual graphs with one less vertex - 05/18/2018
+def readOnelessDualGraphs():
+
+    prevAdjFile = "V%dAdjDG_new"%(numVertices-1) # output files
+    prevEigenFile = "%dEigen_new"%(numVertices-1)
+
+    #reading the eigen values, this will create the dual graph class instances and initialize the graph ID, number of vertices, and eigen values
+    loadEigenvalues(OnelessGraphs,numVertices-1,prevEigenFile)
+    loadAdjMatrices(OnelessGraphs,numVertices-1,prevAdjFile) #reading the adjacency matrices
+
+    #print the dual graphs for testing
+    #testFile = "Test_eigen"
+    #testFile2 = "Test_Adj"
+    #for i in range(0,len(OnelessGraphs)):
+    #    printMat(OnelessGraphs[i].adjMatrix,testFile2)
+    #    OnelessGraphs[i].printEigen(testFile)
+
+
+# function to generate all allowed edge combinations by which the new vertex can be connected to onelessgraphs read previously
+def genEdgesCombo(edgesLeft,startVertex,prevEdges):
+
+    # recursion termination condition 1
+    if edgesLeft == 0: # if not edges are left to be added, add 0's for remaning vertices and add this combo to edgesCombo list
+        edgesCombo.append(prevEdges)
+        return
+
+    # recursion termination condition 2
+    if startVertex == numVertices-1: # this combination not possible with this number of vertices
+        return
+
+    for j in range(0,edgesLeft+1):
+        if edgesLeft-j != 4: #because there can't be 4 edges between two vertices
+            curEdges = deepcopy(prevEdges)
+            curEdges[startVertex]=edgesLeft-j
+            genEdgesCombo(j,startVertex+1,curEdges)
+
+
 # function to determine if a adjMatrix follows the rules for dual graphs or not - 05/17/2018
 def followRules(adjMatrix):
 
@@ -58,7 +95,7 @@ def followRules(adjMatrix):
         return False
 
 
-# function to determine if the laplacian of the dual graph has already been enumerated or not - - 05/16/2018
+# function to determine if the laplacian of the dual graph has already been enumerated or not - 05/16/2018
 def determineUnique(adjMatrix):
     
     # calculate the laplacian and eigen values
@@ -79,7 +116,7 @@ def determineUnique(adjMatrix):
 
 
 # recursive function to enumerate dual graphs. Each new vertex is connected to each previous vertex one at a time with 1,2, and 3 edges (again one at a time)
-# Right now this misses graphs where the new vertex can be connected to more than one previous vertices - 05/16/2018
+# This misses graphs where the new vertex can be connected to more than one previous vertices - 05/16/2018
 def enumerate(adjMatrix,curVertex):
     
     if(curVertex == numVertices): #recursion ending condition
@@ -110,16 +147,99 @@ def enumerate(adjMatrix,curVertex):
                 enumerate(curAdjMatrix,curVertex+1)
 
 
+# function to enumerate graphs with numVertices by adding a new vertex to all onelessgraphs by using edge combinations in edgesCombo
+# for each dual graph starting point, this checks the compatibility of each edge combination, and generates unique graphs that follows the rules
+def enumerateAll(): # TODO
+
+    for g in OnelessGraphs:
+        print "Adding new vertex to starting graph %s"%g.graphID
+        
+        initialAdjMat = [] # adjacency matrix of the new graph but all new entries are 0
+        edgeConn = []
+        for i in range(0,numVertices-1):
+            deg=0
+            tempArray=[]
+            for j in range(0,numVertices-1):
+                if i != j: # not counting self loops
+                    tempArray.append(g.adjMatrix[i][j])
+                    deg+=g.adjMatrix[i][j]
+                else:
+                    tempArray.append(0)
+            tempArray.append(0) # for the extra vertex
+            initialAdjMat.append(tempArray) # adding the extra column for the new vertex to the Adj matrix
+            edgeConn.append(deg) # sroting the connections of the previous vertices
+        tempArray = []
+        for i in range(0,numVertices): # adding the extra row for the new vertex to the Adj matrix
+            tempArray.append(0)
+        initialAdjMat.append(tempArray)
+
+        # for each edge combination previously generated
+        for edges in edgesCombo:
+            print "Checking if this edge combination is compatible with this starting graph"
+            compatible = True
+            for j in range(0,numVertices-1):
+                print "Vertex %d: Edges Present: %d Edges to be added: %d"%(j,edgeConn[j],edges[j])
+                if (edgeConn[j] + edges[j]) > 4: # if total edges will become more than 4 then this edge combination is not compatible with this graph
+                    compatible = False
+                    print "This edge combination is not compatible"
+                    break
+
+            if compatible:
+                print "This edge combination is compatible. Adding vertex and creating adjacency matrix"
+                curAdjMatrix = deepcopy(initialAdjMat)
+                for j in range(0,numVertices-1): # adding connections for the new vertex to the adjacency matrix
+                    curAdjMatrix[j][numVertices-1] = edges[j]
+                    curAdjMatrix[numVertices-1][j] = edges[j]
+
+                # check if the new adjacency matrix follows the rules and if unique, add it to the set of new unique graphs
+                check = False
+                check = followRules(curAdjMatrix) # add self loops and see if this matrix follows the rules of dual graphs or not
+                if check:
+                    determineUnique(curAdjMatrix)
+
+
+# The main function
 numVertices = int(sys.argv[1])
-UniqueGraphs = []
-adjMatrix_init = []
-adjMatFile = "V%dAdjDG_new"%numVertices
+
+UniqueGraphs = [] # New unique dual graphs that will be enumerated
+OnelessGraphs = [] # Dual graphs with one vertex less that will be used as starting points
+edgesCombo = [] # all allowed edges combination by which the new vertex can be added to onelessgraphs
+
+adjMatFile = "V%dAdjDG_new"%numVertices # output files for newly enumerated graphs
 eigenFile = "%dEigen_new"%numVertices
 
-for i in range(0,numVertices): # initializing the adjacency matrix
-    tempArray = []
-    for j in range(0,numVertices):
-        tempArray.append(0.0000)
-    adjMatrix_init.append(tempArray)
+# following lines were used to generate the graphs with 2 vertices (as there is only one previous vertex to connect to)
+#adjMatrix_init = []
+#for i in range(0,numVertices): # initializing the adjacency matrix
+#    tempArray = []
+#    for j in range(0,numVertices):
+#        tempArray.append(0.0000)
+#    adjMatrix_init.append(tempArray)
+#enumerate(adjMatrix_init,1)
 
-enumerate(adjMatrix_init,1)
+print "Reading starting graphs with %d vertices"%(numVertices-1)
+readOnelessDualGraphs() # read the eigen values and adjacency matrices for dual graphs with one less vertex
+
+print "Generating all allowed edge combinations by which the new vertex with be added to starting graphs read before"
+curEdgeCombo=[]
+for i in range(0,numVertices-1):
+    curEdgeCombo.append(0)
+genEdgesCombo(1,0,curEdgeCombo) # generate all allowed edge combinations for 1 egdes
+for i in range(0,numVertices-1):
+    curEdgeCombo[i] = 0
+genEdgesCombo(2,0,curEdgeCombo) # generate all allowed edge combinations for 2 egdes
+for i in range(0,numVertices-1):
+    curEdgeCombo[i] = 0
+genEdgesCombo(3,0,curEdgeCombo) # generate all allowed edge combinations for 3 egdes
+for i in range(0,numVertices-1):
+    curEdgeCombo[i] = 0
+genEdgesCombo(4,0,curEdgeCombo) # generate all allowed edge combinations for 4 egdes
+print "Total number of possible edge combinations generated: %d"%len(edgesCombo)
+#print the edge combinations for testing
+#for i in range(0,len(edgesCombo)):
+#    for j in range(0,numVertices-1):
+#        print edgesCombo[i][j],
+#    print
+
+# Enumerate all graphs
+enumerateAll()
