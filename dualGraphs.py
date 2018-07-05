@@ -193,6 +193,31 @@ def getBPSEQInfo(arg):
 	f.close()	
 	return RNA
 
+##Translate information from an adjacency matrix into an RNA class - S.J. 07/05/2018
+def getAdjMatInfo(arg):
+        f = open(arg)
+        RNA = RNAInfo()
+        lines = f.readlines()
+        for i in range(0,len(lines)):
+		RNA.Helices.append(Helix())
+                line = lines[i]
+                tempArray = []
+                degree = 0
+                for x in line.split():
+                        degree += float(x)
+                        tempArray.append(float(x))
+                RNA.adjMatrix.append(tempArray)
+                tempArray = []
+                for j in range (1,i+1):
+                        tempArray.append(0.0000)
+                tempArray.append(degree)
+                for j in range (i+1,len(lines)):
+                        tempArray.append(0.0000)
+                RNA.degMatrix.append(tempArray)
+	f.close()
+        return RNA
+
+
 #Determine whether or not there are pseudoknots in the structure
 def pseudoKnots(RNA):
 	for i in range(1,len(RNA.Bases)-1):
@@ -460,7 +485,8 @@ def correctHNumbers(RNA):
 			#if RNA.Bases[l].helixNumber == 0:
 				RNA.Bases[l].helixNumber = i
 
-def calcEigen(RNA,arg):
+#def calcEigen(RNA,arg):
+def calcEigen(RNA): # S.J. 07/05/2018 - removing the last argument as that is not needed
 	if len(RNA.Helices)==2:
 		print "1_1" 
 	elif len(RNA.Helices)>10:
@@ -506,7 +532,7 @@ def calcEigen(RNA,arg):
 		if loc == -1: # if matching graph is not found
 			print "TMV,%d" %(len(RNA.Helices)-1)
 			return 0
-		print "%s" %(keys[loc])
+		print "Graph ID: %s" %(keys[loc])
 		#print "<a href=http://www.biomath.nyu.edu/rag/dual_topology.php?topo=%s>Graph ID: %s</a>" %(keys[loc], keys[loc])
 		graphID.append(keys[loc])
 		return 1 # added by S.J. 11/09/2017 to return 1 if successful in assigning graph ID
@@ -555,58 +581,42 @@ def label(RNA):
 		
 
 def main():			
-	for arg in sys.argv[1:]:
-		if arg[-2:] == "ct":
-			RNA = getCTInfo(arg)
-		else:
-			RNA = getBPSEQInfo(arg)
+	#for arg in sys.argv[1:]: # S.J. 07/05/2018 - eliminating the for loop, so this will run on one file at a time
+	# S.J. 07/04/2018 - adding to read in adjacency matrices
+	adjMatTrue = False
+	if sys.argv[1] == "-adj_mat":
+		adjMatTrue = True
+                RNA = getAdjMatInfo(sys.argv[2])
+	elif sys.argv[1][-2:] == "ct": 
+		RNA = getCTInfo(sys.argv[1])
+	else:
+		RNA = getBPSEQInfo(sys.argv[1])
+
+	if not adjMatTrue:
 		countHelices(RNA) 
 		changeHelices(RNA)
 		RNA.makeMatrices()
 		connectHelices(RNA)
-		print "Number of Vertices: " + str(len(RNA.Helices)-1)
-		RNA.printAdj()
-		name=arg.split("/")[-1].split(".")[0]
-        #write adj matrix to file
-        #file1=open("/Users/sj78/Documents/GrantsChapters/FiguresForRNAGraphsChapter/Figs_material/1s72_dualmat.txt","w")
-        #file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/%s_matrix.txt"%name,"w")
-        file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/%s_matrix.txt"%name,"w")
-        #file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/%s_matrix.txt"%name,"w")
-        #write matrix dimension to file (needed for the c++ code)
-        #file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/n.txt","w")
-        file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/n.txt","w")
-        #file2=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/n.txt","w")
-        file2.write("%d"%len(RNA.adjMatrix))
-        file2.close()
-
-        for i in range(len(RNA.adjMatrix)):
-			for j in range(len(RNA.adjMatrix)):
-				file1.write("%d "%RNA.adjMatrix[i][j])
-			file1.write("\n")
-        file1.close()
+	print "Number of Vertices: " + str(len(RNA.Helices)-1)
+	RNA.printAdj()
         RNA.printDeg()
-        RNA.printHelices()
-	RNA.printEdges() # S.J. 02/11/2018
-        success=calcEigen(RNA,arg) # catching the return value S.J. 11/09/2017
-        correctHNumbers(RNA)
-        if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
-            print "No matching graph exists because vertex number is either 1 or greater than 10."
-	elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
-	    print "No matching graph exists (even if the vertex number is between 2 and 9)."
-        else:
-            label(RNA)
-        #Write graph ID to file
-        #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/Graph_ID.txt","a+")
-        file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/rRNA_ribovision/adj_matrices/Graph_ID.txt","a+")
-        #file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/CODES/Test/Graph_ID.txt","a+")
-        if len(graphID)<1:
-            #file3.write("%s\t%s\n"%(name,len(RNA.Helices)))
-            file3.write("%s\t%s\n"%(name,len(RNA.Helices)-1)) # S.J. 11/09/2017 - need to print RNA.Helices-1 for total number of helices because the index for helices starts from 1, therefore the length of RNA.Helices will be one more than the number of helices
-        else:
-            file3.write("%s\t%s\n"%(name,graphID[0]))
-        file3.close()
-
 	
+	if not adjMatTrue:
+        	RNA.printHelices()
+       		RNA.printEdges() # S.J. 02/11/2018
+
+        success=calcEigen(RNA) # catching the return value S.J. 11/09/2017 - removing the last argument as that is not need 07/05/2018
+        
+	if not adjMatTrue:
+		correctHNumbers(RNA)
+
+        if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
+        	print "No matching graph exists because vertex number is either 1 or greater than 10."
+	elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
+		print "No matching graph exists (even if the vertex number is between 2 and 9)."
+        else:
+		if not adjMatTrue:
+        		label(RNA)
 
 #check if there are only zeroes between nt (start) and nt (end)
 def clearPath(RNA,start,end):
