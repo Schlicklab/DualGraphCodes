@@ -513,6 +513,7 @@ def calcEigen(RNA,arg):
 
 def label(RNA):
 		#Code to LABEL, please address any PROBLEMS!###ALSO FIX GRAPHID
+        # S.J. - 06/08/2018 - need to change it so that the vertex order is calculated without the self loops
 		ID = graphID[0]
 		vertexOrder = None
 		vNum = int(ID.split('_')[0])

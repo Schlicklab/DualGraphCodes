@@ -104,7 +104,7 @@ def determineUnique(adjMatrix):
     # determine if this graph in already there or not
     id = "NA"
     for g in range(0,len(UniqueGraphs)):
-        id = UniqueGraphs[g].match(decimalArray)
+        id = UniqueGraphs[g].match(decimalArray,adjMatrix) #06/11/2018 - adding the second argument of adjMatrix to determine unique graphs
         if id != "NA":
             print "Graph already found %d"%id
             return

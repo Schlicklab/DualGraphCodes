@@ -7,6 +7,7 @@ import numpy.linalg as LA
 from decimal import *
 import os
 from numpy import *
+from itertools import permutations
 
 #class to contain information about dual graphs - 05/17/2018
 # # copied and modified from 2-find_graphID.py
@@ -18,10 +19,15 @@ class DualGraph:
         self.graphID = c
         self.eigenvalues = d
     
-    # function to see if eigen values are the same or not
-    def match(self,d):
+    # function to see if the graphs are the same or not
+    # first check eigen values, if it is the same, then check graph isomorphism - 06/11/2018
+    def match(self,d,a):
         if self.eigenvalues == d:
-            return self.graphID
+            iso = checkIsomorphism(self.adjMatrix,a)
+            if iso == True: # if they are isomorphic
+                return self.graphID
+            else:
+                return "NA"
         else:
             return "NA"
 
@@ -48,16 +54,22 @@ class DualGraph:
 
 
 # function to print matrices - 05/17/2018
-def printMat(Matrix,filename):
+def printMat(Matrix,filename=None):
     
-    file = open(filename,'a')
+    if filename == None:
+        file = sys.stdout
+    else:
+        file = open(filename,'a')
+
     file.write("\n")
     for i in range(0,len(Matrix)):
         for j in range(0,len(Matrix)):
             file.write("\t%d"%Matrix[i][j]),
         file.write("\n")
     file.write("\n")
-    file.close()
+
+    if file is not sys.stdout:
+        file.close()
 
 
 #function to calculate eigen values of a given adjacency matrix - 05/17/2018
@@ -143,7 +155,7 @@ def loadAdjMatrices(Graphs,num_vertices,file):
             size +=  1
             tempArray = []
             for x in line.split():
-                tempArray.append(int(x))
+                tempArray.append(float(x))
             tempAdjMatrix.append(tempArray)
             if size == num_vertices: # when enough rows are read, then add the adjacency matrix to the Graphs list
                 Graphs[graph_num].setadjMatrix(tempAdjMatrix)
@@ -153,5 +165,45 @@ def loadAdjMatrices(Graphs,num_vertices,file):
                 size = 0
     f.close()
     print "Read adjacency matrices for %d dual graphs from file %s"%(graph_num,file)
+
+
+# function to check isomorphism for two adjacency matrices - 06/11/2018
+# Removes self-loops before checking for isomorphism
+# Parts of the function taken from label(RNA) function in dualGraphs.py
+def checkIsomorphism(adj_source,adj_toComp):
+
+    vertexOrder = None
+    source = []
+    toComp = []
+    source = deepcopy(adj_source)
+    #print source
+    toComp = deepcopy(adj_toComp)
+    #print toComp
+    for i in range(0,len(source)): # remove self loops from the adjacency matrix
+        source[i][i] = 0
+        toComp[i][i] = 0
+
+    permutMatrix = deepcopy(source)
+    num = [] # generating numbers for permutations
+    for i in range(0,len(source)):
+        num.append(i)
+
+    for i in list(permutations(num)): # for every permutation of the vertices of the source matrix
+        listI = list(i)
+        for j in range(0,len(permutMatrix)):
+            jI = listI[j]
+            for k in range(0,len(permutMatrix)):
+                kI= listI[k]
+                permutMatrix[j][k] = source[jI][kI] # create the permutation matrix
+            if permutMatrix==toComp: # compare the permutation with the toComp matrix, if same then they are isomorphic
+                #for i in range(0,len(listI)):
+                #   listI[i]+=1
+                #vertexOrder = listI
+                #print str(vertexOrder)
+                #break
+                return True
+
+    return False
+
 
 
