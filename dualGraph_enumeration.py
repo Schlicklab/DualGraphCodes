@@ -1,5 +1,6 @@
 #!/usr/local/bin/python
 # Swati Jain (S.J.) - script for enumerating dual graph using the rules set in various papers
+# 07/06/2018 - takes three integers as command line arguments, 1: number of vertices for which graphs have to be enumerated, 2: number of vertices of subgraph 1, 3: number of vertices of subgraph 2. All graphs with sub 1 vertices and all graphs with sub 2 vertices will be combined to generate new graphs. Assumption: sub 1 vertex >= sub 2 vertex, therefore sub 2 graphs will be added to sub 1 graph
 
 import sys
 from copy import deepcopy
@@ -9,25 +10,29 @@ import os
 from numpy import *
 from ClassesFunctions import *
 
-# function to read the eigen values and adjacency matrices for dual graphs with one less vertex - 05/18/2018
-def readOnelessDualGraphs():
+# function to read the eigen values and adjacency matrices for dual graphs - 05/18/2018
+# changes to make it read any vertex number dual graphs that will be used as subgraphs - 07/06/2018
+def readSubDualGraphs(vertex,Graphs):
 
-    prevAdjFile = "V%dAdjDG_new"%(numVertices-1) # output files
-    prevEigenFile = "%dEigen_new"%(numVertices-1)
+    print "Reading starting graphs with %d vertices"%(vertex)
+    
+    prevAdjFile = "V%dAdjDG_new"%(vertex) # output files
+    prevEigenFile = "%dEigen_new"%(vertex)
 
     #reading the eigen values, this will create the dual graph class instances and initialize the graph ID, number of vertices, and eigen values
-    loadEigenvalues(OnelessGraphs,numVertices-1,prevEigenFile)
-    loadAdjMatrices(OnelessGraphs,numVertices-1,prevAdjFile) #reading the adjacency matrices
+    loadEigenvalues(Graphs,vertex,prevEigenFile)
+    loadAdjMatrices(Graphs,vertex,prevAdjFile) #reading the adjacency matrices
 
     #print the dual graphs for testing
     #testFile = "Test_eigen"
     #testFile2 = "Test_Adj"
-    #for i in range(0,len(OnelessGraphs)):
-    #    printMat(OnelessGraphs[i].adjMatrix,testFile2)
-    #    OnelessGraphs[i].printEigen(testFile)
+    #for i in range(0,len(Graphs)):
+    #    printMat(Graphs[i].adjMatrix,testFile2)
+    #    Graphs[i].printEigen(testFile)
 
 
-# function to generate all allowed edge combinations by which the new vertex can be connected to onelessgraphs read previously
+# function to generate all allowed edge combinations by which the a new vertex can be connected to sub 1 graphs read previously
+# changes to work with any number of vertices in sub 1 - 07/06/2018
 def genEdgesCombo(edgesLeft,startVertex,prevEdges):
 
     # recursion termination condition 1
@@ -36,7 +41,7 @@ def genEdgesCombo(edgesLeft,startVertex,prevEdges):
         return
 
     # recursion termination condition 2
-    if startVertex == numVertices-1: # this combination not possible with this number of vertices
+    if startVertex == numVertices_sub1: # this combination not possible with this number of vertices
         return
 
     for j in range(0,edgesLeft+1):
@@ -147,39 +152,49 @@ def enumerate(adjMatrix,curVertex):
                 enumerate(curAdjMatrix,curVertex+1)
 
 
-# function to enumerate graphs with numVertices by adding a new vertex to all onelessgraphs by using edge combinations in edgesCombo
+# function to enumerate graphs with numVertices by adding a new vertex/or graph with sub 2 number of vertices to all graphs with sub 1 number of vertices by using edge combinations in edgesCombo - 07/06/2018
 # for each dual graph starting point, this checks the compatibility of each edge combination, and generates unique graphs that follows the rules
-def enumerateAll(): # TODO
+# 07/06/2018 - the three arguments are: the adjacency matrix (without self loops) of the sub 2 graph that will be added to all sub 1 graphs, list of total number of edges to be added to sub 1 graph's vertices, list of indices in the edgeCombo array for edges between each vertex of sub 2 and sub 1 graphs (each corresponding to the same entry in the list of total number of edges)
+def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
-    for g in OnelessGraphs:
-        print "Adding new vertex to starting graph %s"%g.graphID
+    for g in Sub1_Graphs:
+        
+        #if g.graphID == "2" or g.graphID == "3":
+        #    continue
+        
+        print "Adding to starting graph %s"%g.graphID
         
         initialAdjMat = [] # adjacency matrix of the new graph but all new entries are 0
         edgeConn = []
-        for i in range(0,numVertices-1):
+        for i in range(0,numVertices_sub1):
             deg=0
             tempArray=[]
-            for j in range(0,numVertices-1):
+            for j in range(0,numVertices_sub1):
                 if i != j: # not counting self loops
                     tempArray.append(g.adjMatrix[i][j])
                     deg+=g.adjMatrix[i][j]
                 else:
                     tempArray.append(0)
-            tempArray.append(0) # for the extra vertex
+            edgeConn.append(deg) # storing the connections of the previous vertices
+            for j in range(0,numVertices_sub2):
+                tempArray.append(0) # for the extra vertices
             initialAdjMat.append(tempArray) # adding the extra column for the new vertex to the Adj matrix
-            edgeConn.append(deg) # sroting the connections of the previous vertices
-        tempArray = []
-        for i in range(0,numVertices): # adding the extra row for the new vertex to the Adj matrix
-            tempArray.append(0)
-        initialAdjMat.append(tempArray)
+    
+        for j in range(0,numVertices_sub2): # adding the extra rows for the new vertices to the Adj matrix
+            tempArray = []
+            for i in range(0,numVertices_sub1):
+                tempArray.append(0)
+            for k in range(0,numVertices_sub2):
+                tempArray.append(toAddSubMat[j][k]); # copying the adj matrix of the sub 2 graph to be added (provided as an argument)
+            initialAdjMat.append(tempArray)
 
         # for each edge combination previously generated
-        for edges in edgesCombo:
+        for e in range(0,len(numEdgestoAdd)):
             print "Checking if this edge combination is compatible with this starting graph"
             compatible = True
-            for j in range(0,numVertices-1):
-                print "Vertex %d: Edges Present: %d Edges to be added: %d"%(j,edgeConn[j],edges[j])
-                if (edgeConn[j] + edges[j]) > 4: # if total edges will become more than 4 then this edge combination is not compatible with this graph
+            for j in range(0,numVertices_sub1):
+                print "Vertex %d: Edges Present: %d Edges to be added: %d"%(j,edgeConn[j],numEdgestoAdd[e][j])
+                if (edgeConn[j] + numEdgestoAdd[e][j]) > 4: # if total edges for any one vertex will become more than 4 then this edge combination is not compatible with this graph
                     compatible = False
                     print "This edge combination is not compatible"
                     break
@@ -187,9 +202,10 @@ def enumerateAll(): # TODO
             if compatible:
                 print "This edge combination is compatible. Adding vertex and creating adjacency matrix"
                 curAdjMatrix = deepcopy(initialAdjMat)
-                for j in range(0,numVertices-1): # adding connections for the new vertex to the adjacency matrix
-                    curAdjMatrix[j][numVertices-1] = edges[j]
-                    curAdjMatrix[numVertices-1][j] = edges[j]
+                for k in range(0,numVertices_sub2):
+                    for j in range(0,numVertices_sub1): # adding connections for the new vertices to the adjacency matrix
+                        curAdjMatrix[numVertices_sub1+k][j] = edgesCombo[edgesComboIndices[e][k]][j];
+                        curAdjMatrix[j][numVertices_sub1+k] = edgesCombo[edgesComboIndices[e][k]][j];
 
                 # check if the new adjacency matrix follows the rules and if unique, add it to the set of new unique graphs
                 check = False
@@ -198,15 +214,96 @@ def enumerateAll(): # TODO
                     determineUnique(curAdjMatrix)
 
 
+# 07/08/2018 - to select edge combinations that are compatible with a given sub 2 graph (from which this function is called)
+def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges):
+
+    if V == numVertices_sub2: # all vertices have been covered for this edge combinations
+        # add the edge combination to the list of edge indices total number of edges to list of total number of edges
+        ListIndices.append(prevIndex)
+        ListNumEdges.append(prevNumEdges)
+        return
+
+    for e in range(0,len(edgesCombo)):
+
+        deg = 0
+        for i in range(0,numVertices_sub1):
+            deg+=edgesCombo[e][i]
+
+        if deg + edgeConn[V] <= 4: # this edge is compatible with this sub 2 vertex V
+
+            curNumEdges = deepcopy(prevNumEdges)
+            for i in range(0,numVertices_sub1):
+                curNumEdges[i]+=edgesCombo[e][i] # adding the number of edges that will have to be added to sub 1 graph vertices using this edge combo
+
+            curIndex = deepcopy(prevIndex)
+            curIndex[V]=e # adding the index for the compatible edge combination for the sub 2 vertex V
+
+            selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges)
+
+        else:
+            print "Edge combination %d not compatible with vertex %d"%(e+1,V+1)
+
+
+# 07/06/2018 - function to combine edge combinations for all vertices in sub 2 vertices graphs, and then calling enumerateAllSub1 for each sub 2 vertex graph
+def enumerateAll():
+
+    for g in Sub2_Graphs:
+        
+        #if g.graphID == "1" or g.graphID == "2":
+        #    continue
+        
+        print "Analzying edge combinations to be added for graph %s"%g.graphID
+
+        basicAdjMat = [] # adjacency matrix for graph g without self loops
+        edgeConn = []
+        for i in range(0,numVertices_sub2):
+            deg=0
+            tempArray=[]
+            for j in range(0,numVertices_sub2):
+                if i != j: # not counting self loops
+                    tempArray.append(g.adjMatrix[i][j])
+                    deg+=g.adjMatrix[i][j]
+                else:
+                    tempArray.append(0)
+            edgeConn.append(deg) # storing the connections already present in the graph
+            basicAdjMat.append(tempArray)
+
+        ListNumEdges=[]
+        ListIndices=[]
+        tempIndex=[]
+        tempNumEdges=[]
+        
+        for i in range(0,numVertices_sub2):
+            tempIndex.append(0)
+        for i in range(0,numVertices_sub1):
+            tempNumEdges.append(0)
+
+        selectEdgeCombos(0,edgeConn,tempIndex,tempNumEdges,ListIndices,ListNumEdges) # making a list of edge combinations that are compatible with this sub 2 graph
+
+        del ListIndices[0] # because the first is always not adding any edges to by vertices, 0 always
+        del ListNumEdges[0]
+        
+        for i in range(0,len(ListIndices)):
+            for j in range(0,numVertices_sub2):
+                print ListIndices[i][j],
+            print
+
+        enumerateAllSub1(basicAdjMat,ListNumEdges,ListIndices) # generate new graphs by adding this sub 2 graph to all sub 1 graphs using the edge combinations selected above
+
+
 # The main function
 numVertices = int(sys.argv[1])
+numVertices_sub1 = int(sys.argv[2]) # 07/06/2018 - the number of vertices of two subgraphs that will be combined
+numVertices_sub2 = int(sys.argv[3])
 
 UniqueGraphs = [] # New unique dual graphs that will be enumerated
-OnelessGraphs = [] # Dual graphs with one vertex less that will be used as starting points
-edgesCombo = [] # all allowed edges combination by which the new vertex can be added to onelessgraphs
+# 07/06/2018 - changes to work with sub 2 graphs with any number of vertices
+Sub1_Graphs = [] # Dual graphs with vertex number sub1
+Sub2_Graphs = [] # Dual graphs with vertex number sub2
+edgesCombo = [] # all allowed edges combination by which the one of the new vertices of sub 2 graphs can be added to sub 1 graphs
 
-adjMatFile = "V%dAdjDG_new"%numVertices # output files for newly enumerated graphs
-eigenFile = "%dEigen_new"%numVertices
+adjMatFile = "V%dAdjDG_test2"%numVertices # output files for newly enumerated graphs
+eigenFile = "%dEigen_test2"%numVertices
 
 # following lines were used to generate the graphs with 2 vertices (as there is only one previous vertex to connect to)
 #adjMatrix_init = []
@@ -217,27 +314,32 @@ eigenFile = "%dEigen_new"%numVertices
 #    adjMatrix_init.append(tempArray)
 #enumerate(adjMatrix_init,1)
 
-print "Reading starting graphs with %d vertices"%(numVertices-1)
-readOnelessDualGraphs() # read the eigen values and adjacency matrices for dual graphs with one less vertex
+# 07/06/2018 - to read both subgraphs that will be used
+readSubDualGraphs(numVertices_sub1,Sub1_Graphs) # read the eigen values and adjacency matrices for dual graphs for Sub1
+readSubDualGraphs(numVertices_sub2,Sub2_Graphs) # read the eigen values and adjacency matrices for dual graphs for Sub2
 
-print "Generating all allowed edge combinations by which the new vertex with be added to starting graphs read before"
+# 07/06/2018 - changes to work with adding not just one vertex, but graphs of sub 2 vertex numbers to graphs of sub 1 vertex numbers
+print "Generating all allowed edge combinations by which the new graphs with be added to starting graphs read before"
 curEdgeCombo=[]
-for i in range(0,numVertices-1):
+for i in range(0,numVertices_sub1):
     curEdgeCombo.append(0)
+edgesCombo.append(curEdgeCombo) # generate all allowed edge combinations for 0 egdes
+for i in range(0,numVertices_sub1):
+    curEdgeCombo[i] = 0
 genEdgesCombo(1,0,curEdgeCombo) # generate all allowed edge combinations for 1 egdes
-for i in range(0,numVertices-1):
+for i in range(0,numVertices_sub1):
     curEdgeCombo[i] = 0
 genEdgesCombo(2,0,curEdgeCombo) # generate all allowed edge combinations for 2 egdes
-for i in range(0,numVertices-1):
+for i in range(0,numVertices_sub1):
     curEdgeCombo[i] = 0
 genEdgesCombo(3,0,curEdgeCombo) # generate all allowed edge combinations for 3 egdes
-for i in range(0,numVertices-1):
+for i in range(0,numVertices_sub1):
     curEdgeCombo[i] = 0
 genEdgesCombo(4,0,curEdgeCombo) # generate all allowed edge combinations for 4 egdes
-print "Total number of possible edge combinations generated: %d"%len(edgesCombo)
+print "Total number of possible edge combinations generated for one vertex: %d"%len(edgesCombo)
 #print the edge combinations for testing
 #for i in range(0,len(edgesCombo)):
-#    for j in range(0,numVertices-1):
+#    for j in range(0,numVertices_sub1):
 #        print edgesCombo[i][j],
 #    print
 
