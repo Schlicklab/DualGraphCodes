@@ -25,8 +25,6 @@ def loadEigenvalues(num_vertices):
 		line = f.readline()	
 	f.close()
 
-
-
 class Base:
 	index = None  #nucleotide Index
 	indexBP = None  #base paired to 
@@ -221,21 +219,29 @@ def getAdjMatInfo(arg):
 # first line of a dot bracket notation should contain the sequence, and the second line should contain the dot bracket notation
 def getDotBracketInfo(arg):
     f = open(arg)
-    RNA = RNAInfo()
-    
-    line = f.readline().strip()
-    sequence = [c for c in line] # stores the base identity of the residue
-    line = f.readline().strip()
-    dotb = [c for c in line]
+    lines=f.readlines()
     f.close()
+    
+    found_seq = False
+    found_dotb = False
+    
+    for line in lines:
+        line = line.strip().split()[0]
+        if (not found_seq) and (line[0] == "A" or line[0] == "G" or line[0] == "C" or line[0] == "U"): # this is the sequence line
+            sequence = [c for c in line] # stores the base identity of the residue
+            found_seq = True
+        elif (not found_dotb) and (line[0] == "." or line[0] == "(" or line[0] == ")"): # this is the dot bracket line
+            dotb = [c for c in line]
+            found_dotb = True
     
     stack_bp=[]
     base_pair=[] # to store the residue number of base pair
+    RNA = RNAInfo()
     
-    for i in range(0,len(sequence)):
+    for i in range(0,len(dotb)):
         base_pair.append(0) # initializing base pairs with all 0's
     
-    for i in range(0,len(sequence)): # looping over number of bases based on sequence, as the dot bracket line can contain extra things (from Vienna format)
+    for i in range(0,len(dotb)):
         if dotb[i] == "(": # opening bracket, add the res number to stack
             stack_bp.append(i)
         elif dotb[i] == ")": # closing bracket, then pop the res number from the stack, and assign base_pairs to both residues
@@ -244,12 +250,16 @@ def getDotBracketInfo(arg):
             base_pair[i_bp]=i+1
 
     #add bases to RNA
-    for i in range(0,len(sequence)):
+    for i in range(0,len(dotb)):
         oneBase = Base()
-        oneBase.initialize(i+1,sequence[i],base_pair[i])
+        if found_seq:
+            oneBase.initialize(i+1,sequence[i],base_pair[i])
+        else:
+            oneBase.initialize(i+1,"N",base_pair[i])
         RNA.addBase(oneBase)
-    
+
     return RNA
+
 
 
 #Determine whether or not there are pseudoknots in the structure
@@ -620,8 +630,8 @@ def main():
 	adjMatTrue = False
 	if sys.argv[1] == "-adj_mat":
 		adjMatTrue = True
-                RNA = getAdjMatInfo(sys.argv[2])
-    	elif sys.argv[1] == "-dotb": # S.J. 07/25/2018 - flag to read RNA info in dotbracket notation
+		RNA = getAdjMatInfo(sys.argv[2])
+	elif sys.argv[1] == "-dotb": # S.J. 07/25/2018 - flag to read RNA info in dotbracket notation
         	RNA = getDotBracketInfo(sys.argv[2])
 	elif sys.argv[1][-2:] == "ct": 
 		RNA = getCTInfo(sys.argv[1])
@@ -633,26 +643,28 @@ def main():
 		changeHelices(RNA)
 		RNA.makeMatrices()
 		connectHelices(RNA)
-	print "Number of Vertices: " + str(len(RNA.Helices)-1)
-	RNA.printAdj()
-        RNA.printDeg()
-	
-	if not adjMatTrue:
-        	RNA.printHelices()
-       		RNA.printEdges() # S.J. 02/11/2018
 
-        success=calcEigen(RNA) # catching the return value S.J. 11/09/2017 - removing the last argument as that is not need 07/05/2018
+#print "Number of Vertices: " + str(len(RNA.Helices)-1)
+        
+    	RNA.printAdj()
+    	RNA.printDeg()
+	
+    #if not adjMatTrue:
+    #    	RNA.printHelices()
+    #    	RNA.printEdges() # S.J. 02/11/2018
+
+	success=calcEigen(RNA) # catching the return value S.J. 11/09/2017 - removing the last argument as that is not need 07/05/2018
         
 	if not adjMatTrue:
 		correctHNumbers(RNA)
 
-        if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
+	if len(RNA.adjMatrix)==1 or len(RNA.adjMatrix)>9:
         	print "No matching graph exists because vertex number is either 1 or greater than 10."
 	elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
 		print "No matching graph exists (even if the vertex number is between 2 and 9)."
-        else:
-		if not adjMatTrue:
-        		label(RNA)
+	#else:
+        #	if not adjMatTrue:
+        #    		label(RNA)
 
 #check if there are only zeroes between nt (start) and nt (end)
 def clearPath(RNA,start,end):
