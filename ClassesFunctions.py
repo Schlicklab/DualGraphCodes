@@ -21,9 +21,10 @@ class DualGraph:
     
     # function to see if the graphs are the same or not
     # first check eigen values, if it is the same, then check graph isomorphism - 06/11/2018
-    def match(self,d,a):
+    # adding the vertexOrder, i.e, if asked the isomorphism function will update it - 07/11/2018
+    def match(self,d,a,vertexOrder=None):
         if self.eigenvalues == d:
-            iso = checkIsomorphism(self.adjMatrix,a)
+            iso = checkIsomorphism(self.adjMatrix,a,vertexOrder)
             if iso == True: # if they are isomorphic
                 return self.graphID
             else:
@@ -104,17 +105,25 @@ def calcEigenValues(adjMatrix):
 
 #function to print eigen values in 0.8 precision that are in the form of a decimalArray - 05/17/2018
 # copied and modified from calcEigenvals.py
-def printEigenValues(eigen,filename):
+# 07/09/2018 - changes so that it can print to stdout as well (with labels)
+def printEigenValues(eigen,filename=None):
+    
+    if filename == None:
+        file = sys.stdout
+    else:
+        file = open(filename,'a')
 
-    file = open(filename,'a')
     decimalPlace = Decimal("0.00000001")
     for i in range(0,len(eigen)): # print eigen values upto .8 precision without negative signs
         if str(eigen[i])[0] == "-":
             eigen[i] = Decimal(str(eigen[i])[1:]).quantize(decimalPlace)
+        if filename == None:
+            file.write("Eigenvalue: %d: "%(i+1))
         file.write('{0:.8f}'.format(eigen[i]))
         file.write("\n")
-    file.close()
 
+    if file is not sys.stdout:
+        file.close()
 
 # function to load all dual graph IDs and eigen values from a given file and create dual graph instances - 05/18/2018
 # copied and modified from dualGraphs.py
@@ -136,7 +145,7 @@ def loadEigenvalues(Graphs,num_vertices,file):
             graph_num+=1
             tArray = []
     f.close()
-    print "Read eigan values for %d dual graphs from file %s"%(graph_num,file)
+    print "Read eigenvalues for %d dual graphs from file %s"%(graph_num,file)
 
 
 # function to load all adj matrices from given files into the Graphs list - 05/18/2018
@@ -158,7 +167,7 @@ def loadAdjMatrices(Graphs,num_vertices,file):
                 tempArray.append(float(x))
             tempAdjMatrix.append(tempArray)
             if size == num_vertices: # when enough rows are read, then add the adjacency matrix to the Graphs list
-                Graphs[graph_num].setadjMatrix(tempAdjMatrix)
+		Graphs[graph_num].setadjMatrix(tempAdjMatrix)
                 graph_num += 1
                 #re-initialize the variables
                 tempAdjMatrix = []
@@ -170,9 +179,9 @@ def loadAdjMatrices(Graphs,num_vertices,file):
 # function to check isomorphism for two adjacency matrices - 06/11/2018
 # Removes self-loops before checking for isomorphism
 # Parts of the function taken from label(RNA) function in dualGraphs.py
-def checkIsomorphism(adj_source,adj_toComp):
+# 07/11/2018 - will return the vertex order if that argument is passed
+def checkIsomorphism(adj_source,adj_toComp,vertexOrder = None):
 
-    vertexOrder = None
     source = []
     toComp = []
     source = deepcopy(adj_source)
@@ -196,10 +205,11 @@ def checkIsomorphism(adj_source,adj_toComp):
                 kI= listI[k]
                 permutMatrix[j][k] = source[jI][kI] # create the permutation matrix
             if permutMatrix==toComp: # compare the permutation with the toComp matrix, if same then they are isomorphic
-                #for i in range(0,len(listI)):
-                #   listI[i]+=1
-                #vertexOrder = listI
-                #print str(vertexOrder)
+                if vertexOrder != None: # if vertex order is passed
+                    for i in range(0,len(listI)):
+                        listI[i]+=1
+                        vertexOrder[i]=listI[i]
+                    #print str(vertexOrder)
                 #break
                 return True
 
