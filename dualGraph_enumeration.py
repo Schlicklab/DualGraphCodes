@@ -158,9 +158,9 @@ def enumerate(adjMatrix,curVertex):
 def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
     for g in Sub1_Graphs:
-        
-        #if g.graphID == "2" or g.graphID == "3":
-        #    continue
+
+	if g.graphID != "13137":
+		continue
         
         print "Adding to starting graph %s"%g.graphID
         
@@ -215,7 +215,8 @@ def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
 
 # 07/08/2018 - to select edge combinations that are compatible with a given sub 2 graph (from which this function is called)
-def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges):
+# 07/30/2018 - adding the last argument for completely symmetric graphs (2_1,2_2,2_3,3_5, and 4_19)
+def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges,index):
 
     if V == numVertices_sub2: # all vertices have been covered for this edge combinations
         # add the edge combination to the list of edge indices total number of edges to list of total number of edges
@@ -223,7 +224,8 @@ def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges)
         ListNumEdges.append(prevNumEdges)
         return
 
-    for e in range(0,len(edgesCombo)):
+    #for e in range(0,len(edgesCombo)):
+    for e in range(index,len(edgesCombo)):
 
         deg = 0
         for i in range(0,numVertices_sub1):
@@ -238,7 +240,8 @@ def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges)
             curIndex = deepcopy(prevIndex)
             curIndex[V]=e # adding the index for the compatible edge combination for the sub 2 vertex V
 
-            selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges)
+            selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges,0)
+            #selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges,e) # use this for completely symmetric graphs
 
         else:
             print "Edge combination %d not compatible with vertex %d"%(e+1,V+1)
@@ -249,7 +252,9 @@ def enumerateAll():
 
     for g in Sub2_Graphs:
         
-        #if g.graphID == "1" or g.graphID == "2":
+        #if g.graphID != sys.argv[4]: # to work only for one specific sub2 graph - used for dividing large runs
+        #    continue
+        #if g.graphID == "1" or g.graphID == "2" or g.graphID == "4" or g.graphID == "8": #specifically for the ones that are not non-separable blocks for 3 vertices
         #    continue
         
         print "Analzying edge combinations to be added for graph %s"%g.graphID
@@ -278,15 +283,17 @@ def enumerateAll():
         for i in range(0,numVertices_sub1):
             tempNumEdges.append(0)
 
-        selectEdgeCombos(0,edgeConn,tempIndex,tempNumEdges,ListIndices,ListNumEdges) # making a list of edge combinations that are compatible with this sub 2 graph
-
+        #selectEdgeCombos(0,edgeConn,tempIndex,tempNumEdges,ListIndices,ListNumEdges) # making a list of edge combinations that are compatible with this sub 2 graph
+        selectEdgeCombos(0,edgeConn,tempIndex,tempNumEdges,ListIndices,ListNumEdges,0)
+        
         del ListIndices[0] # because the first is always not adding any edges to by vertices, 0 always
         del ListNumEdges[0]
-        
-        for i in range(0,len(ListIndices)):
-            for j in range(0,numVertices_sub2):
-                print ListIndices[i][j],
-            print
+	
+        print "Number of edge combinations for all vertices compatible with this graph: %d"%(len(ListNumEdges))
+        #for i in range(0,len(ListIndices)):
+        #    for j in range(0,numVertices_sub2):
+        #        print ListIndices[i][j],
+        #    print
 
         enumerateAllSub1(basicAdjMat,ListNumEdges,ListIndices) # generate new graphs by adding this sub 2 graph to all sub 1 graphs using the edge combinations selected above
 
@@ -302,8 +309,8 @@ Sub1_Graphs = [] # Dual graphs with vertex number sub1
 Sub2_Graphs = [] # Dual graphs with vertex number sub2
 edgesCombo = [] # all allowed edges combination by which the one of the new vertices of sub 2 graphs can be added to sub 1 graphs
 
-adjMatFile = "V%dAdjDG_test2"%numVertices # output files for newly enumerated graphs
-eigenFile = "%dEigen_test2"%numVertices
+adjMatFile = "V%dAdjDG_combo"%numVertices # output files for newly enumerated graphs
+eigenFile = "%dEigen_combo"%numVertices
 
 # following lines were used to generate the graphs with 2 vertices (as there is only one previous vertex to connect to)
 #adjMatrix_init = []
