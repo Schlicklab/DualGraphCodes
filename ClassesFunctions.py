@@ -215,5 +215,48 @@ def checkIsomorphism(adj_source,adj_toComp,vertexOrder = None):
 
     return False
 
+# function to assign a graph ID for the given eigenvalue spectrum and adjacency matrix
+# this will do a binary search which will be log(n) time as the read dual graphs are alresdy sorted in the new files
+# 08/24/2018
+def searchtoAssignID(Graphs,start,end,eigen,matrix):
+    
+    # not found termination condition
+    if start > end:
+        return "NA"
+
+    index = (start+end)/2 # the mid point graph to check
+    id = Graphs[index].match(eigen,matrix)
+    
+    # found termination condition - assigned graph ID
+    if id != "NA":
+        return id
+    
+    if eigen == Graphs[index].eigenvalues: # same eigen values but non-isomorphic graphs
+        
+        # search in the left side of equal
+        i = index-1
+        while eigen == Graphs[i].eigenvalues:
+            id = Graphs[i].match(eigen,matrix)
+            if id != "NA":
+                return id
+            i=i-1
+
+        # search in the right side of equals
+        i = index+1
+        while eigen == Graphs[i].eigenvalues:
+            id = Graphs[i].match(eigen,matrix)
+            if id != "NA":
+                return id
+            i = i+1
+
+        # same eigenvalues but graph not found
+        return "NA"
+
+    elif eigen < Graphs[index].eigenvalues: # search on the left part of the array
+        return searchtoAssignID(Graphs,start,index-1,eigen,matrix)
+    elif eigen > Graphs[index].eigenvalues: # search in the right part of the array
+        return searchtoAssignID(Graphs,index+1,end,eigen,matrix)
+
+
 
 

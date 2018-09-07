@@ -17,8 +17,11 @@ def readDualGraphs():
     for i in range(2,10): # will read dual graphs from 2-9 vertices (10 used as the range function stops before the last number)
 
         Graphs=[]
-        file_eigen = "%dEigen"%i
-        file_adjMat = "V%dAdjDG"%i
+        #file_eigen = "%dEigen"%i
+        #file_adjMat = "V%dAdjDG"%i
+        
+        file_eigen = "%dEigen_map_sort"%i
+        file_adjMat = "V%dAdjDG_map_sort"%i
 
         loadEigenvalues(Graphs,i,file_eigen) # load eigen values for dual graphs for vertex number i
         loadAdjMatrices(Graphs,i,file_adjMat) # load adjacency matrices for dual graphs for vertex number i
@@ -39,7 +42,7 @@ if sys.argv[1] == "-blocks":
     sub_outfile=open("%s/all_block_IDs.txt"%path,"w")
     submatrix_dir = "submatrices"
     edges_dir = "edges"
-    part_out_dir = "output_correct"
+    part_out_dir = "output"
 elif sys.argv[1] == "-subgraphs":
     sub_string = "New Subgraph"
     sub_outfile=open("%s/all_subgraph_IDs.txt"%path,"w")
@@ -123,10 +126,12 @@ for filename in myfiles:
                 #printEigenValues(eigen)
 
                 loc = "NA"
-                for g in DualGraphsLib[N-1]: # search for matching dual graph in the list of dual graphs with the correct vertex number
-                    loc = g.match(eigen,matrix)
-                    if loc != "NA": # match found
-                        break
+                # 08/24/2018 - commented out to use binary search function instead
+                #for g in DualGraphsLib[N-1]: # search for matching dual graph in the list of dual graphs with the correct vertex number
+                #    loc = g.match(eigen,matrix)
+                #    if loc != "NA": # match found
+                #        break
+                loc = searchtoAssignID(DualGraphsLib[N-1],0,len(DualGraphsLib[N-1])-1,eigen,matrix)
 
                 if loc == "NA": # 04/20/2018 - modified by S.J. - added S.J. 11/09/2017 to make sure we don't assign graph IDs my mistake even if we don't have them in the library
                     sub_outfile.write("%s\t%d\t%d\n"%(filename, count, N)) #just write the number of vertices for this as well
