@@ -7,17 +7,79 @@ from copy import deepcopy
 import numpy.linalg as LA
 from decimal import *
 import os
+import time
 from numpy import *
 from ClassesFunctions import *
+
+# 09/07/2018 - binary tree node to store dual graphs for better search time
+class BinaryTreeNode:
+
+    def __init__(self,values=None):
+        self.key = values
+        self.graphs = []
+        self.leftNode = None
+        self.rightNode = None
+    
+    def addGraph(self,adjMatrix,graphID,adjMatFile,eigenFile):
+        g = DualGraph(len(adjMatrix),adjMatrix,graphID,self.key)
+        g.printEigen(eigenFile)
+        printMat(g.adjMatrix,adjMatFile)
+        self.graphs.append(g)
+    
+    def insert(self,eigenvalues,adjMatrix,total_graphs,adjMatFile,eigenFile):
+
+        if self.key == None: # first graph to be created
+            total_graphs=1
+            self.key = eigenvalues
+            self.addGraph(adjMatrix,total_graphs,adjMatFile,eigenFile)
+            return total_graphs
+
+        else: # the tree is not empty
+
+            curNode = self
+            while(curNode != None):
+
+                if(eigenvalues < curNode.key): # go to the left subtree as eigenvalues are smaller
+                    if curNode.leftNode != None:
+                        curNode = curNode.leftNode
+                    else:
+                        total_graphs+=1
+                        curNode.leftNode = BinaryTreeNode(eigenvalues)
+                        curNode.leftNode.addGraph(adjMatrix,total_graphs,adjMatFile,eigenFile)
+                        return total_graphs
+            
+                elif(eigenvalues > curNode.key): #go to the right subtree as eigenvalues are greater
+                    if curNode.rightNode != None:
+                        curNode = curNode.rightNode
+                    else:
+                        total_graphs+=1
+                        curNode.rightNode = BinaryTreeNode(eigenvalues)
+                        curNode.rightNode.addGraph(adjMatrix,total_graphs,adjMatFile,eigenFile)
+                        return total_graphs
+
+                else: # decimalArray is the same as this node's eigenvalues, so now check for isomorphism
+                    searchGraphs = curNode.graphs
+                    flag=False
+
+                    for g in searchGraphs: # for each graph in this node, check if the current graph is isomorphic or not
+                        flag=checkIsomorphism(g.adjMatrix,adjMatrix)
+                        if flag: # if this is already present, just return
+                            return total_graphs
+
+                    # code will come here if the current graph is not present, so needs to be added
+                    total_graphs+=1
+                    curNode.addGraph(adjMatrix,total_graphs,adjMatFile,eigenFile)
+                    return total_graphs
+
 
 # function to read the eigen values and adjacency matrices for dual graphs - 05/18/2018
 # changes to make it read any vertex number dual graphs that will be used as subgraphs - 07/06/2018
 def readSubDualGraphs(vertex,Graphs):
 
-    print "Reading starting graphs with %d vertices"%(vertex)
+    #print "Reading starting graphs with %d vertices"%(vertex)
     
-    prevAdjFile = "V%dAdjDG_new"%(vertex) # output files
-    prevEigenFile = "%dEigen_new"%(vertex)
+    prevAdjFile = "V%dAdjDG_map_sort"%(vertex) # output files
+    prevEigenFile = "%dEigen_map_sort"%(vertex)
 
     #reading the eigen values, this will create the dual graph class instances and initialize the graph ID, number of vertices, and eigen values
     loadEigenvalues(Graphs,vertex,prevEigenFile)
@@ -79,14 +141,14 @@ def followRules(adjMatrix):
         degree.append(edges)
 
     if numThree != 0 and numThree == 2: #if there are vertices with degree 3 present, there can only be 2 vertices with degree 3
-        print "This graph follows the rules"
+        #print "This graph follows the rules"
         for i in range(0,numV):
             if degree[i] == 2: # if any vertex has only 2, then make it 4 by adding self loop
                 adjMatrix[i][i] = 2
                 degree[i]+=2
         return True
     elif numThree == 0 and numTwo != 0: # if there are no vertices with degree 3, then there has to be atleast one vertex with degree 2
-        print "This graph follows the rules"
+        #print "This graph follows the rules"
         firstTwo = False
         for i in range(0,numV):
             if degree[i] == 2 and not firstTwo: # leave the first occurance of degree 2 vertex as is (as we need one and only one vertex of degree 2)
@@ -96,28 +158,32 @@ def followRules(adjMatrix):
                 degree[i]+=2
         return True
     else:
-        print "This graph does not follow the rules"
+        #print "This graph does not follow the rules"
         return False
 
 
 # function to determine if the laplacian of the dual graph has already been enumerated or not - 05/16/2018
 def determineUnique(adjMatrix):
     
+    global total_new_graphs
     # calculate the laplacian and eigen values
     decimalArray = calcEigenValues(adjMatrix)
 
     # determine if this graph in already there or not
-    id = "NA"
-    for g in range(0,len(UniqueGraphs)):
-        id = UniqueGraphs[g].match(decimalArray,adjMatrix) #06/11/2018 - adding the second argument of adjMatrix to determine unique graphs
-        if id != "NA":
-            print "Graph already found %d"%id
-            return
-    if id == "NA":
-        print "New graph being added with id %d"%(len(UniqueGraphs)+1)
-        UniqueGraphs.append(DualGraph(len(adjMatrix),adjMatrix,len(UniqueGraphs)+1,decimalArray))
-        printMat(adjMatrix,adjMatFile)
-        UniqueGraphs[len(UniqueGraphs)-1].printEigen(eigenFile)
+    #id = "NA"
+    #for g in range(0,len(UniqueGraphs)):
+    #    id = UniqueGraphs[g].match(decimalArray,adjMatrix) #06/11/2018 - adding the second argument of adjMatrix to determine unique graphs
+    #    if id != "NA":
+            #print "Graph already found %d"%id
+    #        return
+    #if id == "NA":
+        #print "New graph being added with id %d"%(len(UniqueGraphs)+1)
+    #    UniqueGraphs.append(DualGraph(len(adjMatrix),adjMatrix,len(UniqueGraphs)+1,decimalArray))
+    #    printMat(adjMatrix,adjMatFile)
+    #    UniqueGraphs[len(UniqueGraphs)-1].printEigen(eigenFile)
+
+    # 09/07/2018 - implementation of a binary tree for insertion and search
+    total_new_graphs=UniqueGraphs.insert(decimalArray,adjMatrix,total_new_graphs,adjMatFile,eigenFile)
 
 
 # recursive function to enumerate dual graphs. Each new vertex is connected to each previous vertex one at a time with 1,2, and 3 edges (again one at a time)
@@ -125,18 +191,18 @@ def determineUnique(adjMatrix):
 def enumerate(adjMatrix,curVertex):
     
     if(curVertex == numVertices): #recursion ending condition
-        print "Full graph connected"
+        #print "Full graph connected"
         flag = False
         flag = followRules(adjMatrix) # add self loops and see if this matrix follows the rules of dual graphs or not
         if flag:
             determineUnique(adjMatrix)
         return
 
-    print "Adding vertex %d to the graph"%curVertex
+    #print "Adding vertex %d to the graph"%curVertex
     for prev in range(0,curVertex): #range over all previous vertices
-        print "Connecting it to Vertex %d"%prev
+        #print "Connecting it to Vertex %d"%prev
         for edges in range(1,4): #range over all possible number of edges between two vertices
-            print "With %d edges"%edges
+            #print "With %d edges"%edges
             curAdjMatrix = deepcopy(adjMatrix) #using the original adjacency matrix
             curAdjMatrix[prev][curVertex] = edges
             curAdjMatrix[curVertex][prev] = edges
@@ -146,9 +212,10 @@ def enumerate(adjMatrix,curVertex):
                 degree_prev += curAdjMatrix[prev][i]
                 degree_cur += curAdjMatrix[curVertex][i]
             if degree_cur > 4 or degree_prev > 4:
-                print "Graph not accoring to rules. Not going forward"
+                next
+                #print "Graph not accoring to rules. Not going forward"
             else:
-                print "Going forward with enumeration"
+                #print "Going forward with enumeration"
                 enumerate(curAdjMatrix,curVertex+1)
 
 
@@ -159,10 +226,10 @@ def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
     for g in Sub1_Graphs:
 
-	if g.graphID != "13137":
-		continue
+	#if g.graphID != "13137":
+	#	continue
         
-        print "Adding to starting graph %s"%g.graphID
+        #print "Adding to starting graph %s"%g.graphID
         
         initialAdjMat = [] # adjacency matrix of the new graph but all new entries are 0
         edgeConn = []
@@ -190,17 +257,17 @@ def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
         # for each edge combination previously generated
         for e in range(0,len(numEdgestoAdd)):
-            print "Checking if this edge combination is compatible with this starting graph"
+            #print "Checking if this edge combination is compatible with this starting graph"
             compatible = True
             for j in range(0,numVertices_sub1):
-                print "Vertex %d: Edges Present: %d Edges to be added: %d"%(j,edgeConn[j],numEdgestoAdd[e][j])
+                #print "Vertex %d: Edges Present: %d Edges to be added: %d"%(j,edgeConn[j],numEdgestoAdd[e][j])
                 if (edgeConn[j] + numEdgestoAdd[e][j]) > 4: # if total edges for any one vertex will become more than 4 then this edge combination is not compatible with this graph
                     compatible = False
-                    print "This edge combination is not compatible"
+                    #print "This edge combination is not compatible"
                     break
 
             if compatible:
-                print "This edge combination is compatible. Adding vertex and creating adjacency matrix"
+                #print "This edge combination is compatible. Adding vertex and creating adjacency matrix"
                 curAdjMatrix = deepcopy(initialAdjMat)
                 for k in range(0,numVertices_sub2):
                     for j in range(0,numVertices_sub1): # adding connections for the new vertices to the adjacency matrix
@@ -243,8 +310,8 @@ def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges,
             selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges,0)
             #selectEdgeCombos(V+1,edgeConn,curIndex,curNumEdges,ListIndices,ListNumEdges,e) # use this for completely symmetric graphs
 
-        else:
-            print "Edge combination %d not compatible with vertex %d"%(e+1,V+1)
+        #else:
+            #print "Edge combination %d not compatible with vertex %d"%(e+1,V+1)
 
 
 # 07/06/2018 - function to combine edge combinations for all vertices in sub 2 vertices graphs, and then calling enumerateAllSub1 for each sub 2 vertex graph
@@ -257,7 +324,7 @@ def enumerateAll():
         #if g.graphID == "1" or g.graphID == "2" or g.graphID == "4" or g.graphID == "8": #specifically for the ones that are not non-separable blocks for 3 vertices
         #    continue
         
-        print "Analzying edge combinations to be added for graph %s"%g.graphID
+        #print "Analzying edge combinations to be added for graph %s"%g.graphID
 
         basicAdjMat = [] # adjacency matrix for graph g without self loops
         edgeConn = []
@@ -289,7 +356,7 @@ def enumerateAll():
         del ListIndices[0] # because the first is always not adding any edges to by vertices, 0 always
         del ListNumEdges[0]
 	
-        print "Number of edge combinations for all vertices compatible with this graph: %d"%(len(ListNumEdges))
+        #print "Number of edge combinations for all vertices compatible with this graph: %d"%(len(ListNumEdges))
         #for i in range(0,len(ListIndices)):
         #    for j in range(0,numVertices_sub2):
         #        print ListIndices[i][j],
@@ -299,18 +366,26 @@ def enumerateAll():
 
 
 # The main function
+start_time = time.clock()
+
 numVertices = int(sys.argv[1])
 numVertices_sub1 = int(sys.argv[2]) # 07/06/2018 - the number of vertices of two subgraphs that will be combined
 numVertices_sub2 = int(sys.argv[3])
 
-UniqueGraphs = [] # New unique dual graphs that will be enumerated
+
+
+#UniqueGraphs = [] # New unique dual graphs that will be enumerated
+UniqueGraphs = BinaryTreeNode() # 09/07/2018 - binary search tree
+total_new_graphs=0
+
 # 07/06/2018 - changes to work with sub 2 graphs with any number of vertices
 Sub1_Graphs = [] # Dual graphs with vertex number sub1
 Sub2_Graphs = [] # Dual graphs with vertex number sub2
 edgesCombo = [] # all allowed edges combination by which the one of the new vertices of sub 2 graphs can be added to sub 1 graphs
 
-adjMatFile = "V%dAdjDG_combo"%numVertices # output files for newly enumerated graphs
-eigenFile = "%dEigen_combo"%numVertices
+number_file = int(sys.argv[4])
+adjMatFile = "time_test/V%dAdjDG_%d_%d_%d"%(numVertices,numVertices_sub1,numVertices_sub2,number_file) # output files for newly enumerated graphs
+eigenFile = "time_test/%dEigen_%d_%d_%d"%(numVertices,numVertices_sub1,numVertices_sub2,number_file)
 
 # following lines were used to generate the graphs with 2 vertices (as there is only one previous vertex to connect to)
 #adjMatrix_init = []
@@ -326,7 +401,7 @@ readSubDualGraphs(numVertices_sub1,Sub1_Graphs) # read the eigen values and adja
 readSubDualGraphs(numVertices_sub2,Sub2_Graphs) # read the eigen values and adjacency matrices for dual graphs for Sub2
 
 # 07/06/2018 - changes to work with adding not just one vertex, but graphs of sub 2 vertex numbers to graphs of sub 1 vertex numbers
-print "Generating all allowed edge combinations by which the new graphs with be added to starting graphs read before"
+#print "Generating all allowed edge combinations by which the new graphs with be added to starting graphs read before"
 curEdgeCombo=[]
 for i in range(0,numVertices_sub1):
     curEdgeCombo.append(0)
@@ -343,7 +418,7 @@ genEdgesCombo(3,0,curEdgeCombo) # generate all allowed edge combinations for 3 e
 for i in range(0,numVertices_sub1):
     curEdgeCombo[i] = 0
 genEdgesCombo(4,0,curEdgeCombo) # generate all allowed edge combinations for 4 egdes
-print "Total number of possible edge combinations generated for one vertex: %d"%len(edgesCombo)
+#print "Total number of possible edge combinations generated for one vertex: %d"%len(edgesCombo)
 #print the edge combinations for testing
 #for i in range(0,len(edgesCombo)):
 #    for j in range(0,numVertices_sub1):
@@ -352,3 +427,8 @@ print "Total number of possible edge combinations generated for one vertex: %d"%
 
 # Enumerate all graphs
 enumerateAll()
+
+end_time = time.clock()
+
+print "The total time taken in seconds is:",
+print (end_time - start_time)
