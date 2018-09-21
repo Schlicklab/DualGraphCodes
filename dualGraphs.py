@@ -466,8 +466,8 @@ def calcEigen(RNA,arg):
 		print "TMV,%d" %(len(RNA.Helices)-1)
 	else:
         # S.J. 07/09/2018 - to use the eignvalue and adjMatrix functions in the ClassesFunctions.py file to reduce redundancy
-       		eigenfile = "%dEigen"%(len(RNA.Helices)-1)# reading the dual graphs for the correct number of vertices
-       		adjMatfile = "V%dAdjDG"%(len(RNA.Helices)-1)
+       		eigenfile = "%dEigen_map_sort"%(len(RNA.Helices)-1)# reading the dual graphs for the correct number of vertices
+       		adjMatfile = "V%dAdjDG_map_sort"%(len(RNA.Helices)-1)
 
         	loadEigenvalues(DualGraphs,len(RNA.Helices)-1,eigenfile)
         	loadAdjMatrices(DualGraphs,len(RNA.Helices)-1,adjMatfile)
@@ -583,7 +583,7 @@ def main():
 
         name=arg.split("/")[-1].split(".")[0]
         #write adj matrix to file
-        file1=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/%s_matrix.txt"%name,"w")
+        file1=open("/home/sj78/labwork/AllRNADataset_August2018/adj_matrices/%s_matrix.txt"%name,"w")
         for i in range(len(RNA.adjMatrix)):
         	for j in range(len(RNA.adjMatrix)):
         		file1.write("%d "%RNA.adjMatrix[i][j])
@@ -604,7 +604,7 @@ def main():
             RNA.printOrder(vertexOrder) # printing the vertex order here only, no need to check isomorphism twice
         
         #Write graph ID to file
-        file3=open("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/adj_matrices/Graph_ID.txt","a+")
+        file3=open("/home/sj78/labwork/AllRNADataset_August2018/adj_matrices/Graph_ID.txt","a+")
         if len(graphID)<1:
             file3.write("%s\t%s\n"%(name,len(RNA.Helices)-1)) # S.J. 11/09/2017 - need to print RNA.Helices-1 for total number of helices because the index for helices starts from 1, therefore the length of RNA.Helices will be one more than the number of helices
         else:
