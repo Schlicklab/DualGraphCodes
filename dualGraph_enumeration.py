@@ -168,6 +168,7 @@ def determineUnique(adjMatrix):
     global total_new_graphs
     # calculate the laplacian and eigen values
     decimalArray = calcEigenValues(adjMatrix)
+    eigen_tuple=tuple(decimalArray)
 
     # determine if this graph in already there or not
     #id = "NA"
@@ -183,8 +184,46 @@ def determineUnique(adjMatrix):
     #    UniqueGraphs[len(UniqueGraphs)-1].printEigen(eigenFile)
 
     # 09/07/2018 - implementation of a binary tree for insertion and search
-    total_new_graphs=UniqueGraphs.insert(decimalArray,adjMatrix,total_new_graphs,adjMatFile,eigenFile)
+    #total_new_graphs=UniqueGraphs.insert(decimalArray,adjMatrix,total_new_graphs,adjMatFile,eigenFile)
 
+    Graphs=UniqueGraphs.get(eigen_tuple,[])
+    flag=False
+    for g in Graphs:
+	    flag=checkIsomorphism(g.adjMatrix,adjMatrix)
+            if flag: # if this is already present, just return
+            	return
+
+    # code will come here if the current graph is not present, so needs to be added
+    total_new_graphs+=1
+    new_g=DualGraph(len(adjMatrix),adjMatrix,total_new_graphs,decimalArray)
+    new_g.printEigen(eigenFile)
+    printMat(new_g.adjMatrix,adjMatFile)
+    Graphs.append(new_g)
+    UniqueGraphs[eigen_tuple]=Graphs
+    
+#   if eigen_tuple in UniqueGraphs:
+#    	flag=False
+#	Graphs=UniqueGraphs[eigen_tuple]
+#	for g in Graphs:
+#	       flag=checkIsomorphism(g.adjMatrix,adjMatrix)
+#              if flag: # if this is already present, just return
+#                	return
+
+	# code will come here if the current graph is not present, so needs to be added
+#      	total_new_graphs+=1
+#	new_g=DualGraph(len(adjMatrix),adjMatrix,total_new_graphs,decimalArray)
+#	new_g.printEigen(eigenFile)
+#       printMat(new_g.adjMatrix,adjMatFile)
+#	Graphs.append(new_g)
+#	UniqueGraphs[eigen_tuple]=Graphs
+#    else:
+#	Graphs=[]
+#	total_new_graphs+=1
+#	new_g=DualGraph(len(adjMatrix),adjMatrix,total_new_graphs,decimalArray)
+#       new_g.printEigen(eigenFile)
+#       printMat(new_g.adjMatrix,adjMatFile)
+#	Graphs.append(new_g)
+#	UniqueGraphs[eigen_tuple]=Graphs
 
 # recursive function to enumerate dual graphs. Each new vertex is connected to each previous vertex one at a time with 1,2, and 3 edges (again one at a time)
 # This misses graphs where the new vertex can be connected to more than one previous vertices - 05/16/2018
@@ -226,8 +265,8 @@ def enumerateAllSub1(toAddSubMat,numEdgestoAdd,edgesComboIndices):
 
     for g in Sub1_Graphs:
 
-	#if g.graphID != "13137":
-	#	continue
+        #if g.graphID != "3_2":
+        #	continue
         
         #print "Adding to starting graph %s"%g.graphID
         
@@ -316,12 +355,12 @@ def selectEdgeCombos(V,edgeConn,prevIndex,prevNumEdges,ListIndices,ListNumEdges,
 
 # 07/06/2018 - function to combine edge combinations for all vertices in sub 2 vertices graphs, and then calling enumerateAllSub1 for each sub 2 vertex graph
 def enumerateAll():
+    
+    global genGraphs_time
 
     for g in Sub2_Graphs:
         
-        #if g.graphID != sys.argv[4]: # to work only for one specific sub2 graph - used for dividing large runs
-        #    continue
-        #if g.graphID == "1" or g.graphID == "2" or g.graphID == "4" or g.graphID == "8": #specifically for the ones that are not non-separable blocks for 3 vertices
+        #if g.graphID != "2_2": # to work only for one specific sub2 graph - used for dividing large runs
         #    continue
         
         #print "Analzying edge combinations to be added for graph %s"%g.graphID
@@ -358,12 +397,18 @@ def enumerateAll():
 	
         #print "Number of edge combinations for all vertices compatible with this graph: %d"%(len(ListNumEdges))
         #for i in range(0,len(ListIndices)):
+        #    print "Combo: ",
         #    for j in range(0,numVertices_sub2):
         #        print ListIndices[i][j],
+        #    print "Added: ",
+        #    for j in range(0,numVertices_sub1):
+        #        print ListNumEdges[i][j],
         #    print
 
+        start_time_2=time.clock()
         enumerateAllSub1(basicAdjMat,ListNumEdges,ListIndices) # generate new graphs by adding this sub 2 graph to all sub 1 graphs using the edge combinations selected above
-
+        end_time_2=time.clock()
+        genGraphs_time+=end_time_2-start_time_2
 
 # The main function
 start_time = time.clock()
@@ -372,16 +417,16 @@ numVertices = int(sys.argv[1])
 numVertices_sub1 = int(sys.argv[2]) # 07/06/2018 - the number of vertices of two subgraphs that will be combined
 numVertices_sub2 = int(sys.argv[3])
 
-
-
 #UniqueGraphs = [] # New unique dual graphs that will be enumerated
-UniqueGraphs = BinaryTreeNode() # 09/07/2018 - binary search tree
+#UniqueGraphs = BinaryTreeNode() # 09/07/2018 - binary search tree
+UniqueGraphs = dict()
 total_new_graphs=0
 
 # 07/06/2018 - changes to work with sub 2 graphs with any number of vertices
 Sub1_Graphs = [] # Dual graphs with vertex number sub1
 Sub2_Graphs = [] # Dual graphs with vertex number sub2
 edgesCombo = [] # all allowed edges combination by which the one of the new vertices of sub 2 graphs can be added to sub 1 graphs
+genGraphs_time=0
 
 number_file = int(sys.argv[4])
 adjMatFile = "time_test/V%dAdjDG_%d_%d_%d"%(numVertices,numVertices_sub1,numVertices_sub2,number_file) # output files for newly enumerated graphs
@@ -429,6 +474,9 @@ genEdgesCombo(4,0,curEdgeCombo) # generate all allowed edge combinations for 4 e
 enumerateAll()
 
 end_time = time.clock()
+
+print "The total time taken in seconds to generate graphs (not the checking part for sub 2 graph): ",
+print genGraphs_time
 
 print "The total time taken in seconds is:",
 print (end_time - start_time)
