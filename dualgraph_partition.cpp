@@ -62,6 +62,8 @@ vector<subgraph_node>Blocks; // S.J. 03/29/2018
 vector<int>artPoints; // 04/03/2018 - to store articulation points and how many times they occur
 map<int,vector<subgraph_node> > artPointsBlocks; // to store basic blocks that correspond to each subgraph
 bool all_subgraphs=false; // S.J. 03/30/2018 - flag to see if we want to calculate all subgraphs or not
+int maxVertex=15; // S.J. 10/18/2018 - maximum vertices for which we want to calculate subgraphs
+
 
 // S.J. 04/03/2018 - function to compare two subgraphs and see if they are same or not
 //returns true when two subgraphs are not the same, so that it is inserted in the set Subgraphs
@@ -178,7 +180,7 @@ void setup_artPoints(){
             }
         }
         
-        if(num_vertices >=2 && num_vertices <=9) // 04/19/2018 - only add subgraphs if they are between 2-9 vertices
+        if(num_vertices >=2 && num_vertices <=maxVertex) // 04/19/2018 - only add subgraphs if they are between 2-9 vertices, 10/18/2018 - changed it to the variable maxVertex
             Subgraphs.insert(Blocks[i]);
     }
     
@@ -294,7 +296,7 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
                 if(graph.pknot || artPointsBlocks[i][j].pknot)
                     newsubgraph.pknot=true;
                 
-                if(num_vertices > 9) // 04/14/2018 if the number of vertices in greater than 9, then just ignore it
+                if(num_vertices > maxVertex) // 04/14/2018 if the number of vertices in greater than 9, then just ignore it, 10/18/2018 - changed it to variable maxVertex
                     continue;
                 
                 //cout << "NewSubgraph:";
@@ -313,7 +315,7 @@ void calc_possible_subgraphs(subgraph_node graph){ // 04/03/2018 - for the recur
                 
                     Subgraphs.insert(newsubgraph); // insert this in the Subgraphs
                     //cout << "Subgraph inserted: Calling recursion" << endl;
-                    if(num_vertices<9) // only call the recursion if the size of the subgraph is < 9
+                    if(num_vertices<maxVertex) // only call the recursion if the size of the subgraph is < 9, 10/18/2018 - changed it to maxVertex
                         calc_possible_subgraphs(newsubgraph); // recurse on the new subgraph
                 }
             }
@@ -376,7 +378,7 @@ void print_subgraphs(string outfile_all){
     }
     
     //04/19/2018 - to make it consistent with
-    output << "----------- Total number of subgraphs between 2-9 vertices: " << numreg + numpk << endl;
+    output << "----------- Total number of subgraphs between 2-15 vertices: " << numreg + numpk << endl;
     output << "----------- number of PK containing subgraphs: " << numpk << endl;
     output << "----------- number of regular subgraphs : " << numreg << endl;
     output << "-------------------------------------------------------------------------------------" << endl;

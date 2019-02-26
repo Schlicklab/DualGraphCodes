@@ -81,10 +81,10 @@ def main():
 
     # read the basepairs file
 
-    basepairs_file = "/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/output/%s_basepairs.txt" %(sys.argv[1])
-    output_file = "/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/output/%s_output.txt" %(sys.argv[1])
-    subgraph_file = "/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/all_subgraph_IDs.txt"
-    pdb_file = "/home/sj78/labwork/NonRedundantList_Oct2017/PDBs/%s.pdb" %(sys.argv[1])
+    basepairs_file = "/Users/sj78/Documents/labwork/RNAFilesfromPDB_Aug31/FinalBPSEQs_LC/output/%s_basepairs.txt" %(sys.argv[1])
+    output_file = "/Users/sj78/Documents/labwork/RNAFilesfromPDB_Aug31/FinalBPSEQs_LC/output_subgraphs/%s_output.txt" %(sys.argv[1])
+    subgraph_file = "/Users/sj78/Documents/labwork/RNAFilesfromPDB_Aug31/FinalBPSEQs_LC/all_subgraph_IDs.txt"
+    pdb_file = "/home/sj78/labwork/AllRNADataset_August2018/RNAPDBs/%s.pdb" %(sys.argv[1])
     #bpseq_file = "/home/sj78/labwork/NonRedundantList_Oct2017/BPSEQs/%s.bpseq" %(sys.argv[1])
 
     Edges = []
@@ -126,11 +126,12 @@ def main():
 
     for i in range(0,len(lines)):
         
-        if "New Block" in lines[i]: # contains a new block
+        if "New Subgraph" in lines[i]: # contains a new block
             sub_edges=[x.strip() for x in lines[i+2].strip().split('-')] # list of edges in the subgraph (i+2 as the second line after the New Block contains the edges)
             del sub_edges[-1]
             numbers = [int(x)+1 for x in re.findall('[\w]+',lines[i+2])] # re = regular expression and \w means all words that contain a-zA-Z0-9
             vertices=list(set(numbers)) # list of helices in the subgraph
+            vertices.sort()
             cols = re.split('[\s]+',subgraph_lines[file_index]) #subgraph id
             file_index += 1
             
@@ -170,9 +171,12 @@ def main():
         prevRes = curRes
 
     #write the subgraph information into the file in the database
-    write_subgraph = "/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Subgraphs/%s-subgraphs" %(sys.argv[1])
+    write_subgraph = "/home/sj78/labwork/RAG-3Dual_Jan2019/Subgraphs/%s-subgraphs" %(sys.argv[1])
     file = open(write_subgraph,"w")
     for i in range(0,len(Subgraphs)):
+        check_id = re.split('_',Subgraphs[i].graph_id)
+        if int(check_id[0]) > 9: # if the subgraph has more than 9 vertices, do not print
+            continue
         Subgraphs[i].printSubgraph(file)
     file.close()
 
@@ -183,14 +187,18 @@ def main():
 
     #writing the atomic fragments corresponding to the subgraphs in the database
     for i in range(0,len(Subgraphs)):
+        
+        check_id = re.split('_',Subgraphs[i].graph_id)
+        if int(check_id[0]) > 9: # if the subgraph has more than 9 vertices
+            continue
 
-        if not os.path.isdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Results/%s"%Subgraphs[i].graph_id): # create the subgraph id directpry if necessary
-            os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Results/%s"%Subgraphs[i].graph_id)
-            os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Results/%s/AllAtom"%Subgraphs[i].graph_id)
+        if not os.path.isdir("/home/sj78/labwork/RAG-3Dual_Jan2019/Results/%s"%Subgraphs[i].graph_id): # create the subgraph id directpry if necessary
+            os.mkdir("/home/sj78/labwork/RAG-3Dual_Jan2019/Results/%s"%Subgraphs[i].graph_id)
+            os.mkdir("/home/sj78/labwork/RAG-3Dual_Jan2019/Results/%s/AllAtom"%Subgraphs[i].graph_id)
             #os.mkdir("/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Results/%s/SecStruct"%Subgraphs[i].graph_id)
 
         #write the atomic fragment file
-        atomic_frag_file = "/home/sj78/labwork/DualGraphs_Cigdem/Dual_Partitioning/NonRed2017_results/Dual_RAG-3D/Results/%s/AllAtom/%s-%s-%d-AA-frgt.pdb" %(Subgraphs[i].graph_id,sys.argv[1],Subgraphs[i].graph_id,i+1)
+        atomic_frag_file = "/home/sj78/labwork/RAG-3Dual_Jan2019/Results/%s/AllAtom/%s-%s-%d-AA-frgt.pdb" %(Subgraphs[i].graph_id,sys.argv[1],Subgraphs[i].graph_id,i+1)
         file = open(atomic_frag_file,"w")
         for res in Subgraphs[i].Residues:
             Bases[res-1].printBase(file)
@@ -202,7 +210,6 @@ def main():
         #for res in Subgraphs[i].Residues:
         #   file.write(bpseqContent[res]) #bpseq base lines start from 1
         #file.close()
-
 
 if __name__ == "__main__":
     main()
