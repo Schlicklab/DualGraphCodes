@@ -5,25 +5,13 @@ import numpy.linalg as LA
 from decimal import *
 from copy import deepcopy
 from itertools import permutations
+from ClassesFunctions import *
 
 
-keys = []
-values = []
+# S.J. 07/09/2018 - changes to use the functions defined in ClassesFunctions file to avoid redundancy
 graphID = []
-def loadEigenvalues(num_vertices):
-	f = open("%dEigen" %(num_vertices-1))
-	line = f.readline()
-	keys.append(line[1:-1])
-	while(len(line) > 0):
-		tArray = []
-		while(len(line) > 0 and line[0] != '>'):
-			tArray.append(line[:-1])
-			line = f.readline()
-		values.append(tArray)
-		if(len(line) > 0):
-			keys.append(line[1:-1])	
-		line = f.readline()	
-	f.close()
+DualGraphs = []
+vertexOrder = [] # 07/11/2018 - S.J. added to keep track of vertexOrder
 
 class Base:
 	index = None  #nucleotide Index
@@ -116,8 +104,8 @@ class RNAInfo:
 			print i
 	def printHelices(self):
         	for i in range(1,len(self.Helices)):
-                #print "Vertex %d: start_pos=%d, end_pos=%d, flag=%s" %(i,self.Helices[i].start,self.Helices[i].end,self.Helices[i].flag)
-                #print "Vertex %d: start_pos: (%d, %d), end_pos: (%d, %d)" %(i,self.Helices[i].start,self.Bases[self.Helices[i].start].indexBP,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP)
+                	#print "Vertex %d: start_pos=%d, end_pos=%d, flag=%s" %(i,self.Helices[i].start,self.Helices[i].end,self.Helices[i].flag)
+                	#print "Vertex %d: start_pos: (%d, %d), end_pos: (%d, %d)" %(i,self.Helices[i].start,self.Bases[self.Helices[i].start].indexBP,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP)
                 	#print "Vertex %d: first strand: (%d, %d), second strand: (%d, %d)" %(i,self.Helices[i].start,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP,self.Bases[self.Helices[i].start].indexBP)
                 	print "Vertex %d: first strand: %d %d second strand: %d %d" %(i,self.Helices[i].start,self.Helices[i].end,self.Bases[self.Helices[i].end].indexBP,self.Bases[self.Helices[i].start].indexBP)
     
@@ -161,7 +149,6 @@ def makeMatrices(RNA):
 			tArray.append(0)
 		RNA.degMatrix.append(tArray)
 		
-		
 #Translate information from the CT file into an RNA class
 def getCTInfo(arg):
 	f = open(arg)
@@ -176,6 +163,7 @@ def getCTInfo(arg):
 		line = f.readline()
 	f.close()	
 	return RNA
+
 ##Translate information from BPSEQ file into an RNA class
 def getBPSEQInfo(arg):
 	f = open(arg)
@@ -259,8 +247,6 @@ def getDotBracketInfo(arg):
         RNA.addBase(oneBase)
 
     return RNA
-
-
 
 #Determine whether or not there are pseudoknots in the structure
 def pseudoKnots(RNA):
@@ -431,14 +417,9 @@ def connectHelices(RNA):
 			helix1fiveStart = RNA.Helices[i].start
 			helix1threeStart = RNA.Bases[RNA.Helices[i].end].indexBP
 			helix1threeEnd = RNA.Bases[RNA.Helices[i].start].indexBP
-            
-
-    
 
 			helix2 = [helix2fiveStart, helix2fiveEnd, helix2threeEnd, helix2threeStart]
 			helix1 = [helix1fiveStart, helix1fiveEnd, helix1threeEnd, helix1threeStart]
-                      
-			
 
 			if (clearPath(RNA,helix1fiveEnd,helix2fiveStart) or (helix2fiveStart - helix1fiveEnd)==1):
 				increment(RNA,i,j)
@@ -536,93 +517,31 @@ def calcEigen(RNA): # S.J. 07/05/2018 - removing the last argument as that is no
 	elif len(RNA.Helices)>10:
 		print "TMV,%d" %(len(RNA.Helices)-1)
 	else:
-		loadEigenvalues(len(RNA.Helices))
-		RNA.laplacian = array(RNA.degMatrix) - array(RNA.adjMatrix)
-		RNA.printLpl()
-		eigen = sort(LA.eigvals(RNA.laplacian))
-		decimalArray = []
-		#decimalPlace = Decimal("0.0001")
-		decimalPlace = Decimal("0.00000001")
-		for i in eigen:
-			decimalArray.append(Decimal(str(i)).quantize(decimalPlace))
-		loc = -1
-		for i in range(0,len(values)):
-			tArray = []
-			for j in range(0,len(values[i])):
-				tArray.append(Decimal(str(values[i][j])).quantize(decimalPlace))
-			if decimalArray == tArray:
-				loc = i
-                		#print decimalArray #added by S.J. 11/09/2017 for testing
-                		#print tArray
-                		#print loc
-                		#print keys[loc]
-		#address negative 0 output
-		for i in range(0,len(decimalArray)):
-			if str(decimalArray[i])[0] == "-":	
-				decimalArray[i] = Decimal(str(decimalArray[i])[1:]).quantize(decimalPlace)
-		evNum = 1
-		for i in decimalArray:
-			print "Eigenvalue %d: " %(evNum) + str(i)
-			evNum+= 1
-		#print loc  #added by S.J. 11/09/2017 for testing
-		#print len(keys)
-		#print keys[-2]
-		#print keys[0]
-		#print keys[1]
-		#print keys[2]
-		#print keys[38594]
-		#print keys[38595]
-		#the following if statement added by S.J. 11/09/2017 to make sure that is we don't find the eigen values then we accidently don't assign a graph ID, because python does not give errors for negative indices
-		if loc == -1: # if matching graph is not found
-			print "TMV,%d" %(len(RNA.Helices)-1)
-			return 0
-		print "Graph ID: %s" %(keys[loc])
-		#print "<a href=http://www.biomath.nyu.edu/rag/dual_topology.php?topo=%s>Graph ID: %s</a>" %(keys[loc], keys[loc])
-		graphID.append(keys[loc])
-		return 1 # added by S.J. 11/09/2017 to return 1 if successful in assigning graph ID
+        # S.J. 07/09/2018 - to use the eignvalue and adjMatrix functions in the ClassesFunctions.py file to reduce redundancy
+       		eigenfile = "%dEigen"%(len(RNA.Helices)-1)# reading the dual graphs for the correct number of vertices
+       		adjMatfile = "V%dAdjDG"%(len(RNA.Helices)-1)
 
-def label(RNA):
-		#Code to LABEL, please address any PROBLEMS!###ALSO FIX GRAPHID
-		ID = graphID[0]
-		vertexOrder = None
-		vNum = int(ID.split('_')[0])
-		ID = int(ID.split('_')[1])
-		g = open("V%dAdjDG" %(vNum),'r')
-		a = []
-		#print ((ID-1)*(vNum+2)+2)
-		for j in range(0,((ID-1)*(vNum+2)+2)-1):
-			g.readline()
-		for k in range(0,vNum):
-			tempA = []
-			for l in g.readline().split():
-				tempA.append(int(float(l)))
-			a.append(tempA)
-		g.close()
-		b = RNA.adjMatrix
-		#print a
-		#print b
-		c = deepcopy(a)
-		num = []
-		for i in range(0,len(a)):
-			num.append(i)
-		for i in list(permutations(num)):
-			listI = list(i) 
-			for j in range(0,len(c)):
-				jI = listI[j]
-				for k in range(0,len(c)):
-					kI= listI[k]
-					c[j][k] = a[jI][kI]
-			if c==b:
-				for i in range(0,len(listI)):
-					listI[i]+=1
-				vertexOrder = listI
-				break
-		#print str(vertexOrder)		
-		if vertexOrder != None:			
-			RNA.printOrder(vertexOrder)
-		else:
-			print "Graph isomorphism."		
-		
+        	loadEigenvalues(DualGraphs,len(RNA.Helices)-1,eigenfile)
+        	loadAdjMatrices(DualGraphs,len(RNA.Helices)-1,adjMatfile)
+        	#loadEigenvalues(len(RNA.Helices))
+        
+        	RNA.laplacian = array(RNA.degMatrix) - array(RNA.adjMatrix)
+       		RNA.printLpl()
+        
+        	eigen = calcEigenValues(RNA.adjMatrix) # calculating the eigen values for the RNA adjmatrix
+            	printEigenValues(eigen)
+        	id = "NA"
+        	for g in DualGraphs: # looking for a match in the DualGraphs read earlier
+            
+               		id = g.match(eigen,RNA.adjMatrix,vertexOrder)
+                	if id != "NA": # match found, print ID
+                    		print "Graph ID: %s"%(id)
+           			#print "<a href=http://www.biomath.nyu.edu/rag/dual_topology.php?topo=%s>Graph ID: %s</a>" %(id, id)
+                            	graphID.append(id)
+                            	return 1 # added by S.J. 11/09/2017 to return 1 if successful in assigning graph ID
+        	if id == "NA":
+            		print "TMV,%d" %(len(RNA.Helices)-1)
+            		return 0
 
 def main():			
 	#for arg in sys.argv[1:]: # S.J. 07/05/2018 - eliminating the for loop, so this will run on one file at a time
@@ -644,14 +563,15 @@ def main():
 		RNA.makeMatrices()
 		connectHelices(RNA)
 
-#print "Number of Vertices: " + str(len(RNA.Helices)-1)
-        
+	print "Number of Vertices: " + str(len(RNA.Helices)-1)
     	RNA.printAdj()
     	RNA.printDeg()
 	
-    #if not adjMatTrue:
-    #    	RNA.printHelices()
-    #    	RNA.printEdges() # S.J. 02/11/2018
+    	#if not adjMatTrue:
+    	#    	RNA.printHelices()
+    	#    	RNA.printEdges() # S.J. 02/11/2018
+        for i in range(0,len(RNA.adjMatrix)): # S.J. 07/11/2018 - to keep track of vertexOrder
+        	vertexOrder.append(0)
 
 	success=calcEigen(RNA) # catching the return value S.J. 11/09/2017 - removing the last argument as that is not need 07/05/2018
         
@@ -662,10 +582,11 @@ def main():
         	print "No matching graph exists because vertex number is either 1 or greater than 10."
 	elif success == 0: # no graph ID was assigned as eigen values not in the library S.J. 11/09/2017
 		print "No matching graph exists (even if the vertex number is between 2 and 9)."
-	#else:
-        #	if not adjMatTrue:
-        #    		label(RNA)
-
+	else:
+        	if not adjMatTrue:
+            		#label(RNA) S.J. 07/11/2018 - printing the vertexOrder now updated along with the graph ID in the match function, also vertexOrder calculated now ignoring the self-loops
+           	 	RNA.printOrder(vertexOrder) # printing the vertex order here only, no need to check isomorphism twice
+        
 #check if there are only zeroes between nt (start) and nt (end)
 def clearPath(RNA,start,end):
 	if end<start:
