@@ -17,12 +17,9 @@ def readDualGraphs():
     for i in range(2,10): # will read dual graphs from 2-9 vertices (10 used as the range function stops before the last number)
 
         Graphs=[]
-        #file_eigen = "%dEigen"%i
-        #file_adjMat = "V%dAdjDG"%i
+        file_eigen = "%dEigen"%i
+        file_adjMat = "V%dAdjDG"%i
         
-        file_eigen = "%dEigen_map_sort"%i
-        file_adjMat = "V%dAdjDG_map_sort"%i
-
         loadEigenvalues(Graphs,i,file_eigen) # load eigen values for dual graphs for vertex number i
         loadAdjMatrices(Graphs,i,file_adjMat) # load adjacency matrices for dual graphs for vertex number i
 

@@ -78,8 +78,8 @@ def readSubDualGraphs(vertex,Graphs):
 
     #print "Reading starting graphs with %d vertices"%(vertex)
     
-    prevAdjFile = "V%dAdjDG_map_sort"%(vertex) # output files
-    prevEigenFile = "%dEigen_map_sort"%(vertex)
+    prevAdjFile = "V%dAdjDG"%(vertex) # output files
+    prevEigenFile = "%dEigen"%(vertex)
 
     #reading the eigen values, this will create the dual graph class instances and initialize the graph ID, number of vertices, and eigen values
     loadEigenvalues(Graphs,vertex,prevEigenFile)

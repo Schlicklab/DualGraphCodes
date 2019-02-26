@@ -466,8 +466,8 @@ def calcEigen(RNA,arg):
 		print "TMV,%d" %(len(RNA.Helices)-1)
 	else:
         # S.J. 07/09/2018 - to use the eignvalue and adjMatrix functions in the ClassesFunctions.py file to reduce redundancy
-       		eigenfile = "%dEigen_map_sort"%(len(RNA.Helices)-1)# reading the dual graphs for the correct number of vertices
-       		adjMatfile = "V%dAdjDG_map_sort"%(len(RNA.Helices)-1)
+       		eigenfile = "%dEigen"%(len(RNA.Helices)-1)# reading the dual graphs for the correct number of vertices
+       		adjMatfile = "V%dAdjDG"%(len(RNA.Helices)-1)
 
         	loadEigenvalues(DualGraphs,len(RNA.Helices)-1,eigenfile)
         	loadAdjMatrices(DualGraphs,len(RNA.Helices)-1,adjMatfile)
